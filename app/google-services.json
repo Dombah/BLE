@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "592031074611",
+    "project_id": "ble-advert",
+    "storage_bucket": "ble-advert.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592031074611:android:6609991efda4744cde5646",
+        "android_client_info": {
+          "package_name": "com.domagojleskovic.bleadvert"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjTatyCDQ8IOUCe02kl_tc14ww1PsW5Ic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
