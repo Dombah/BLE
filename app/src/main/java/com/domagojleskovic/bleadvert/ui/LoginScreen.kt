@@ -67,8 +67,8 @@ fun LoginScreen(
     val buttonCurvature = 32.dp
     var passwordVisible by remember { mutableStateOf(false)}
 
-    var email by remember { mutableStateOf("")}
-    var password by remember { mutableStateOf("")}
+    var email by remember { mutableStateOf("d@g.com")} // TODO REMOVE ON RELEASE
+    var password by remember { mutableStateOf("123456")} // TODO REMOVE ON RELEASE
     var isLoading by remember { mutableStateOf(false)}
     if(isLoading){
         Column(
