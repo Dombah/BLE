@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.domagojleskovic.bleadvert.ui.ForgotPasswordScreen
 import com.domagojleskovic.bleadvert.ui.LoginScreen
+import com.domagojleskovic.bleadvert.ui.MenuScreen
 import com.domagojleskovic.bleadvert.ui.RegisterScreen
 import com.domagojleskovic.bleadvert.ui.theme.BLEAdvertTheme
 
@@ -41,7 +42,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("forgot_password")
                                 },
                                 onLoginSuccess = {
-                                    // TODO //
+                                    navController.navigate("menu_screen")
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator
                             )
@@ -49,7 +50,7 @@ class MainActivity : ComponentActivity() {
                         composable("register"){
                             RegisterScreen(
                                 onRegisterSuccess = {
-                                    // TODO //
+                                    navController.navigate("menu_screen")
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator
                             )
@@ -60,6 +61,9 @@ class MainActivity : ComponentActivity() {
                                     navController.popBackStack()
                                 }
                             )
+                        }
+                        composable("menu_screen"){
+                            MenuScreen()
                         }
                     }
                 }

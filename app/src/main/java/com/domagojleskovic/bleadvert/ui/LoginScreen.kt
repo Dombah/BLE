@@ -65,7 +65,7 @@ fun LoginScreen(
     val buttonCurvature = 32.dp
     var passwordVisible by remember { mutableStateOf(false)}
 
-    var username by remember { mutableStateOf("")}
+    var email by remember { mutableStateOf("")}
     var password by remember { mutableStateOf("")}
 
     Column(
@@ -86,13 +86,13 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(16.dp))
         Row {
             OutlinedTextField(
-                value = username,
+                value = email,
                 onValueChange = {
-                    username = it
+                    email = it
                 },
                 shape = RoundedCornerShape(buttonCurvature),
                 label = {
-                    Text(text = "Username:")
+                    Text(text = "email:")
                 },
                 leadingIcon = {
                     Icon(imageVector = Icons.Filled.Person, contentDescription = null)
@@ -145,7 +145,11 @@ fun LoginScreen(
         }
         Spacer(modifier = Modifier.padding(top = 12.dp))
         Button(
-            onClick = { /*TODO*/ },
+            onClick = { 
+                emailPasswordAuthenticator.signIn(email, password){
+                    onLoginSuccess()
+                }
+            },
             modifier = Modifier.width(128.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Black
