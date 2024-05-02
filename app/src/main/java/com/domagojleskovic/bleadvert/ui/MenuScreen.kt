@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,12 +15,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Bluetooth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DrawerValue
@@ -74,14 +79,19 @@ fun LargeTopAppBarExample() {
 
     val items = listOf(
         NavigationItem(
-            title = "All",
+            title = "Home",
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
         ),
         NavigationItem(
-            title = "Urgent",
-            selectedIcon = Icons.Filled.Info,
-            unselectedIcon = Icons.Outlined.Info,
+            title = "Scanned History",
+            selectedIcon = Icons.Filled.Bluetooth,
+            unselectedIcon = Icons.Outlined.Bluetooth,
+        ),
+        NavigationItem(
+            title = "Profile",
+            selectedIcon = Icons.Filled.Person,
+            unselectedIcon = Icons.Outlined.Person,
         ),
         NavigationItem(
             title = "Settings",
@@ -165,7 +175,7 @@ fun LargeTopAppBarExample() {
                     scrollBehavior = scrollBehavior
                 )
             },
-            bottomBar = {
+            /*bottomBar = {
                 BottomAppBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary,
@@ -177,7 +187,7 @@ fun LargeTopAppBarExample() {
                         text = "Bottom app bar",
                     )
                 }
-            },
+            },*/
         ) { innerPadding ->
             ScrollContent(innerPadding)
         }
@@ -185,11 +195,12 @@ fun LargeTopAppBarExample() {
 }
 @Composable
 fun ScrollContent(innerPadding: PaddingValues) {
-    val range = 1..20
+    val range = 1..50
 
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .consumeWindowInsets(innerPadding),
         contentPadding = innerPadding,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {

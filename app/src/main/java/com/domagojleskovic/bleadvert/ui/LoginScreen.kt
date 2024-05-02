@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.AnnotatedString
+import androidx.core.view.WindowCompat
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
 
 @Preview(showBackground = true)
@@ -63,7 +64,6 @@ fun LoginScreen(
     onLoginSuccess : () -> Unit,
     emailPasswordAuthenticator: EmailPasswordAuthenticator,
 ) {
-
     val buttonCurvature = 32.dp
     var passwordVisible by remember { mutableStateOf(false)}
 
