@@ -40,6 +40,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -57,128 +59,149 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("")}
     var password by remember { mutableStateOf("")}
     var confirmPassword by remember { mutableStateOf("")}
+    var isLoading by remember { mutableStateOf(false)}
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 100.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row {
-            Image(painter = painterResource(id = R.drawable.feritlogo), contentDescription = null)
-        }
-        Row {
-            Text(
-                text = "Placeholder name",
-                fontSize = 24.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row {
-            OutlinedTextField(
-                value = email,
-                onValueChange = {
-                    email = it
-                },
-                shape = RoundedCornerShape(buttonCurvature),
-                label = {
-                    Text(text = "email:")
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Person, contentDescription = null)
-                }
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row {
-            OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                },
-                shape = RoundedCornerShape(buttonCurvature),
-                label = {
-                    Text(text = "Password:")
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                trailingIcon = {
-                    val icon = if(passwordVisible)
-                        Icons.Filled.Visibility
-                    else
-                        Icons.Filled.VisibilityOff
-                    val description = if (passwordVisible) "Hide password" else "Show password"
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = icon,
-                            description,
-                            tint = Color.Black
-                        )
-                    }
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
-                }
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row {
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = {
-                    confirmPassword = it
-                },
-                shape = RoundedCornerShape(buttonCurvature),
-                label = {
-                    Text(text = "Confirm password:")
-                },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
-                }
-            )
-        }
-        Spacer(modifier = Modifier.height(buttonCurvature))
-        Button(
-            onClick = {
-                if(confirmPassword != password){
-                    // TODO: Show error message
-                }else{
-                    emailPasswordAuthenticator.createAccount(email,password){
-                        onRegisterSuccess()
-                    }
-                }
-            },
-            modifier = Modifier.width(128.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black
-            ),
 
-            ) {
-            Text(text = "Register")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row{
-            Text(
-                text = "OR",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.W500,
-                fontStyle = FontStyle.Italic
+    if(isLoading){
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.width(96.dp),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row{
+    }else{
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 100.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row {
+                Image(painter = painterResource(id = R.drawable.feritlogo), contentDescription = null)
+            }
+            Row {
+                Text(
+                    text = "Placeholder name",
+                    fontSize = 24.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                    },
+                    shape = RoundedCornerShape(buttonCurvature),
+                    label = {
+                        Text(text = "email:")
+                    },
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Filled.Person, contentDescription = null)
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                    },
+                    shape = RoundedCornerShape(buttonCurvature),
+                    label = {
+                        Text(text = "Password:")
+                    },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        val icon = if(passwordVisible)
+                            Icons.Filled.Visibility
+                        else
+                            Icons.Filled.VisibilityOff
+                        val description = if (passwordVisible) "Hide password" else "Show password"
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = icon,
+                                description,
+                                tint = Color.Black
+                            )
+                        }
+                    },
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row {
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = {
+                        confirmPassword = it
+                    },
+                    shape = RoundedCornerShape(buttonCurvature),
+                    label = {
+                        Text(text = "Confirm password:")
+                    },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(buttonCurvature))
             Button(
-                modifier = Modifier.width(180.dp),
-                onClick = { /*TODO*/ },
+                onClick = {
+                    if(confirmPassword != password){
+                        // TODO: Show error message
+                    }else{
+                        isLoading = true
+                        emailPasswordAuthenticator.createAccount(email,password){
+                            isLoading = false
+                            onRegisterSuccess()
+                        }
+                    }
+                },
+                modifier = Modifier.width(128.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent,
-                    contentColor = Color.Black
+                    containerColor = Color.Black
                 ),
+
                 ) {
-                Text(text = "Continue as guest")
+                Text(text = "Register")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row{
+                Text(
+                    text = "OR",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.W500,
+                    fontStyle = FontStyle.Italic
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row{
+                Button(
+                    modifier = Modifier.width(180.dp),
+                    onClick = { /*TODO*/ },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.Black
+                    ),
+                ) {
+                    Text(text = "Continue as guest")
+                }
             }
         }
     }
+
 }

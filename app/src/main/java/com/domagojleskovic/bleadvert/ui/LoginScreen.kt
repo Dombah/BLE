@@ -39,6 +39,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.AnnotatedString
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
 
@@ -67,102 +69,119 @@ fun LoginScreen(
 
     var email by remember { mutableStateOf("")}
     var password by remember { mutableStateOf("")}
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 100.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row {
-            Image(painter = painterResource(id = R.drawable.feritlogo), contentDescription = null)
-        }
-        Row {
-            Text(
-                text = "Placeholder name",
-                fontSize = 24.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row {
-            OutlinedTextField(
-                value = email,
-                onValueChange = {
-                    email = it
-                },
-                shape = RoundedCornerShape(buttonCurvature),
-                label = {
-                    Text(text = "email:")
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Person, contentDescription = null)
-                }
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row {
-            OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                },
-                shape = RoundedCornerShape(buttonCurvature),
-                label = {
-                    Text(text = "Password:")
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                trailingIcon = {
-                    val icon = if(passwordVisible)
-                        Icons.Filled.Visibility
-                    else
-                        Icons.Filled.VisibilityOff
-                    val description = if (passwordVisible) "Hide password" else "Show password"
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = icon,
-                            description,
-                            tint = Color.Black
-                        )
-                    }
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
-                }
-            )
-        }
-        Spacer(modifier = Modifier.padding(top = 8.dp))
-        Row(
-            horizontalArrangement = Arrangement.End
-        ){
-            ClickableText(
-                text = AnnotatedString("Forgot password?"),
-                onClick = {
-                    onNavigateForgotPasswordScreen()
-                },
-                modifier = Modifier.padding(start = 128.dp)
-            )
-        }
-        Spacer(modifier = Modifier.padding(top = 12.dp))
-        Button(
-            onClick = { 
-                emailPasswordAuthenticator.signIn(email, password){
-                    onLoginSuccess()
-                }
-            },
-            modifier = Modifier.width(128.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black
-            ),
+    var isLoading by remember { mutableStateOf(false)}
+    if(isLoading){
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
 
         ) {
-            Text(text = "Log in")
+            CircularProgressIndicator(
+                modifier = Modifier.width(96.dp),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
         }
-        Spacer(modifier = Modifier.height(220.dp))
-        Row{
-            Text(text = "Not a member?  ")
-            ClickableText(text = AnnotatedString("Sign up"), onClick = {onNavigateRegisterScreen()})
+    }else{
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 100.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row {
+                Image(painter = painterResource(id = R.drawable.feritlogo), contentDescription = null)
+            }
+            Row {
+                Text(
+                    text = "Placeholder name",
+                    fontSize = 24.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                    },
+                    shape = RoundedCornerShape(buttonCurvature),
+                    label = {
+                        Text(text = "email:")
+                    },
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Filled.Person, contentDescription = null)
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                    },
+                    shape = RoundedCornerShape(buttonCurvature),
+                    label = {
+                        Text(text = "Password:")
+                    },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        val icon = if(passwordVisible)
+                            Icons.Filled.Visibility
+                        else
+                            Icons.Filled.VisibilityOff
+                        val description = if (passwordVisible) "Hide password" else "Show password"
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = icon,
+                                description,
+                                tint = Color.Black
+                            )
+                        }
+                    },
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.padding(top = 8.dp))
+            Row(
+                horizontalArrangement = Arrangement.End
+            ){
+                ClickableText(
+                    text = AnnotatedString("Forgot password?"),
+                    onClick = {
+                        onNavigateForgotPasswordScreen()
+                    },
+                    modifier = Modifier.padding(start = 128.dp)
+                )
+            }
+            Spacer(modifier = Modifier.padding(top = 12.dp))
+            Button(
+                onClick = {
+                    isLoading = true
+                    emailPasswordAuthenticator.signIn(email, password){
+                        isLoading = false
+                        onLoginSuccess()
+                    }
+                },
+                modifier = Modifier.width(128.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black
+                ),
+
+                ) {
+                Text(text = "Log in")
+            }
+            Spacer(modifier = Modifier.height(220.dp))
+            Row{
+                Text(text = "Not a member?  ")
+                ClickableText(text = AnnotatedString("Sign up"), onClick = {onNavigateRegisterScreen()})
+            }
         }
     }
-
 }
