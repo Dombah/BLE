@@ -2,25 +2,17 @@ package com.domagojleskovic.bleadvert
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.EaseIn
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -31,7 +23,9 @@ import com.domagojleskovic.bleadvert.ui.MenuScreen
 import com.domagojleskovic.bleadvert.ui.RegisterScreen
 import com.domagojleskovic.bleadvert.ui.theme.BLEAdvertTheme
 
+
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -50,7 +44,15 @@ class MainActivity : ComponentActivity() {
                         enterTransition = { EnterTransition.None },
                         exitTransition = { ExitTransition.None }
                     ){
-                        composable("login"){
+                        composable("login",
+                            enterTransition = {
+                                fadeIn(
+                                    animationSpec = tween(
+                                        300, easing = LinearEasing
+                                    )
+                                )
+                            },
+                        ){
                             LoginScreen(
                                 onNavigateRegisterScreen = {
                                     navController.navigate("register")
@@ -61,10 +63,18 @@ class MainActivity : ComponentActivity() {
                                 onLoginSuccess = {
                                     navController.navigate("menu_screen")
                                 },
-                                emailPasswordAuthenticator = emailPasswordAuthenticator
+                                emailPasswordAuthenticator = emailPasswordAuthenticator,
                             )
                         }
-                        composable("register"){
+                        composable("register",
+                            enterTransition = {
+                                fadeIn(
+                                    animationSpec = tween(
+                                        300, easing = LinearEasing
+                                    )
+                                )
+                            },
+                        ){
                             RegisterScreen(
                                 onRegisterSuccess = {
                                     navController.navigate("menu_screen")
@@ -72,7 +82,14 @@ class MainActivity : ComponentActivity() {
                                 emailPasswordAuthenticator = emailPasswordAuthenticator
                             )
                         }
-                        composable("forgot_password"){
+                        composable("forgot_password",
+                            enterTransition = {
+                                fadeIn(
+                                    animationSpec = tween(
+                                        300, easing = LinearEasing
+                                    )
+                                )
+                            },){
                             ForgotPasswordScreen(
                                 onSubmitEmail = {
                                     navController.popBackStack()
@@ -90,7 +107,9 @@ class MainActivity : ComponentActivity() {
                             },
 
                         ){
-                            MenuScreen()
+                            MenuScreen(){
+                                navController.navigate("login")
+                            }
                         }
                     }
                 }

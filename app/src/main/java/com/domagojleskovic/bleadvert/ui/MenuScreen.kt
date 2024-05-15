@@ -16,15 +16,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Discount
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PowerOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Bluetooth
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Discount
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PowerOff
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DrawerValue
@@ -54,12 +60,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
 import com.domagojleskovic.bleadvert.R
+import com.domagojleskovic.bleadvert.UserInfoStorage
 import kotlinx.coroutines.launch
 
 
@@ -70,13 +79,14 @@ data class NavigationItem(
 )
 
 @Composable
-fun MenuScreen() {
-    LargeTopAppBarExample()
+fun MenuScreen(onSignOut: () -> Unit) {
+    LargeTopAppBarExample(emailPasswordAuthenticator = EmailPasswordAuthenticator(), onSignOut = onSignOut)
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LargeTopAppBarExample() {
-
+fun LargeTopAppBarExample(emailPasswordAuthenticator: EmailPasswordAuthenticator, onSignOut : () -> Unit) {
+    val context = LocalContext.current
+    val userInfoStorage = UserInfoStorage(context)
     val items = listOf(
         NavigationItem(
             title = "Home",
@@ -94,9 +104,19 @@ fun LargeTopAppBarExample() {
             unselectedIcon = Icons.Outlined.Person,
         ),
         NavigationItem(
+            title = "Rewards",
+            selectedIcon = Icons.Filled.Discount,
+            unselectedIcon = Icons.Outlined.Discount,
+        ),
+        NavigationItem(
             title = "Settings",
             selectedIcon = Icons.Filled.Settings,
             unselectedIcon = Icons.Outlined.Settings,
+        ),
+        NavigationItem(
+            title = "Sign out",
+            selectedIcon = Icons.Filled.Close,
+            unselectedIcon = Icons.Outlined.Close,
         )
     )
 
@@ -117,9 +137,15 @@ fun LargeTopAppBarExample() {
                         selected = index == selectedItemIndex,
                         onClick = {
                     //                          navController.navigate(item.route)
+
                             selectedItemIndex = index
                             scope.launch {
                                 drawerState.close()
+                                if(index == items.lastIndex){
+                                    emailPasswordAuthenticator.signOut()
+                                    userInfoStorage.setEmailAndPassword("","")
+                                    onSignOut()
+                                }
                             }
                         },
                         icon = {

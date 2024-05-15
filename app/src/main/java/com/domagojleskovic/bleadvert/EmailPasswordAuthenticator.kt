@@ -1,11 +1,13 @@
 package com.domagojleskovic.bleadvert
 
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 
-class EmailPasswordAuthenticator {
+class EmailPasswordAuthenticator() {
     private var auth: FirebaseAuth = Firebase.auth
 
     fun createAccount(email: String, password: String, onSuccess: () -> Unit) {
@@ -43,6 +45,9 @@ class EmailPasswordAuthenticator {
                 }
             }
         // [END sign_in_with_email]
+    }
+    fun signOut() {
+        auth.signOut()
     }
     companion object {
         private const val TAG = "EmailPassword"

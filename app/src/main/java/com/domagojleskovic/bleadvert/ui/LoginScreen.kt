@@ -1,5 +1,7 @@
 package com.domagojleskovic.bleadvert.ui
 
+import android.util.Log
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,35 +17,42 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.domagojleskovic.bleadvert.R
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.text.AnnotatedString
-import androidx.core.view.WindowCompat
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
+import com.domagojleskovic.bleadvert.LoginRegisterViewModel
+import com.domagojleskovic.bleadvert.R
+import com.domagojleskovic.bleadvert.UserInfoStorage
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @Preview(showBackground = true)
 @Composable
@@ -52,10 +61,9 @@ fun LoginScreenPreview() {
         onNavigateRegisterScreen = {},
         onNavigateForgotPasswordScreen = {},
         onLoginSuccess = {},
-        emailPasswordAuthenticator = EmailPasswordAuthenticator()
+        emailPasswordAuthenticator = EmailPasswordAuthenticator(),
     )
 }
-
 
 @Composable
 fun LoginScreen(
@@ -63,13 +71,44 @@ fun LoginScreen(
     onNavigateForgotPasswordScreen: () -> Unit,
     onLoginSuccess : () -> Unit,
     emailPasswordAuthenticator: EmailPasswordAuthenticator,
+    loginRegisterViewModel: LoginRegisterViewModel = LoginRegisterViewModel()
 ) {
+    val context = LocalContext.current
+    val userInfoStorage = UserInfoStorage(context)
     val buttonCurvature = 32.dp
     var passwordVisible by remember { mutableStateOf(false)}
-
     var email by remember { mutableStateOf("d@g.com")} // TODO REMOVE ON RELEASE
     var password by remember { mutableStateOf("123456")} // TODO REMOVE ON RELEASE
     var isLoading by remember { mutableStateOf(false)}
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        val savedEmail = userInfoStorage.getEmail.first()
+        val savedPassword = userInfoStorage.getPassword.first()
+        if (savedEmail.isNotEmpty() && savedPassword.isNotEmpty()) {
+            isLoading = true
+            emailPasswordAuthenticator.signIn(savedEmail, savedPassword) {
+                isLoading = false
+                onLoginSuccess()
+            }
+        }
+    }
+    /*
+    if(isLoggedIn.value){
+        email = userInfoStorage.getEmail.collectAsState(initial = "").value
+        password = userInfoStorage.getPassword.collectAsState(initial = "").value
+        Log.i("Password", password)
+        Log.i("Email", email)
+        if(email.isNotEmpty() && password.isNotEmpty() && !isReading){
+            isReading = true
+            isLoading = true
+            emailPasswordAuthenticator.signIn(email, password) {
+                isLoading = false
+                onLoginSuccess()
+                Log.i("StorageOnRead", "Success")
+            }
+        }
+    }*/
     if(isLoading){
         Column(
             modifier = Modifier
@@ -92,7 +131,11 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row {
-                Image(painter = painterResource(id = R.drawable.feritlogo), contentDescription = null)
+                Image(
+                    painter = painterResource(id = R.drawable.feritlogo),
+                    contentDescription = null,
+                    modifier = Modifier.width(200.dp)
+                )
             }
             Row {
                 Text(
@@ -166,7 +209,11 @@ fun LoginScreen(
                     isLoading = true
                     emailPasswordAuthenticator.signIn(email, password){
                         isLoading = false
-                        onLoginSuccess()
+                        scope.launch {
+                            onLoginSuccess()
+                            Log.i("ButtonOnClick", "Success")
+                            userInfoStorage.setEmailAndPassword(email, password)
+                        }
                     }
                 },
                 modifier = Modifier.width(128.dp),
@@ -185,3 +232,4 @@ fun LoginScreen(
         }
     }
 }
+

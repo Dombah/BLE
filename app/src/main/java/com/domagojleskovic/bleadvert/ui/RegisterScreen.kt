@@ -46,12 +46,13 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
+import com.domagojleskovic.bleadvert.LoginRegisterViewModel
 
-@Preview(showBackground = true)
 @Composable
 fun RegisterScreen(
     onRegisterSuccess : () -> Unit,
     emailPasswordAuthenticator: EmailPasswordAuthenticator,
+    loginRegisterViewModel: LoginRegisterViewModel = LoginRegisterViewModel()
 ) {
     val buttonCurvature = 32.dp
     var passwordVisible by remember { mutableStateOf(false)}
