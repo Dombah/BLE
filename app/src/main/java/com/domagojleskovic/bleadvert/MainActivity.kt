@@ -18,8 +18,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.domagojleskovic.bleadvert.ui.ForgotPasswordScreen
+import com.domagojleskovic.bleadvert.ui.HomeScreen
 import com.domagojleskovic.bleadvert.ui.LoginScreen
-import com.domagojleskovic.bleadvert.ui.MenuScreen
 import com.domagojleskovic.bleadvert.ui.RegisterScreen
 import com.domagojleskovic.bleadvert.ui.theme.BLEAdvertTheme
 
@@ -28,8 +28,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            enableEdgeToEdge()
             WindowCompat.setDecorFitsSystemWindows(window, false)
             BLEAdvertTheme {
                 Surface(
@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("forgot_password")
                                 },
                                 onLoginSuccess = {
-                                    navController.navigate("menu_screen")
+                                    navController.navigate("home_screen")
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator,
                             )
@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
                         ){
                             RegisterScreen(
                                 onRegisterSuccess = {
-                                    navController.navigate("menu_screen")
+                                    navController.navigate("home_screen")
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator
                             )
@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(
-                            "menu_screen",
+                            "home_screen",
                             enterTransition = {
                                 fadeIn(
                                     animationSpec = tween(
@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
                             },
 
                         ){
-                            MenuScreen(){
+                            HomeScreen(){
                                 navController.navigate("login")
                             }
                         }

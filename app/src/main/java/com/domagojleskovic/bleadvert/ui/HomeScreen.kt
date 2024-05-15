@@ -19,20 +19,15 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Discount
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PowerOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Bluetooth
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Discount
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.PowerOff
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -79,7 +74,7 @@ data class NavigationItem(
 )
 
 @Composable
-fun MenuScreen(onSignOut: () -> Unit) {
+fun HomeScreen(onSignOut: () -> Unit) {
     LargeTopAppBarExample(emailPasswordAuthenticator = EmailPasswordAuthenticator(), onSignOut = onSignOut)
 }
 @OptIn(ExperimentalMaterial3Api::class)

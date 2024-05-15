@@ -1,7 +1,6 @@
 package com.domagojleskovic.bleadvert.ui
 
 import android.util.Log
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
@@ -29,7 +30,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -127,7 +127,8 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 100.dp),
+                .padding(top = 100.dp)
+                .safeContentPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row {
@@ -224,8 +225,8 @@ fun LoginScreen(
                 ) {
                 Text(text = "Log in")
             }
-            Spacer(modifier = Modifier.height(220.dp))
-            Row{
+            Spacer(modifier = Modifier.weight(1f))
+            Row(modifier = Modifier.padding(bottom = 32.dp)){
                 Text(text = "Not a member?  ")
                 ClickableText(text = AnnotatedString("Sign up"), onClick = {onNavigateRegisterScreen()})
             }
