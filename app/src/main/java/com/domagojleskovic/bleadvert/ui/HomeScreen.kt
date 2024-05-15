@@ -58,6 +58,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -210,7 +211,13 @@ fun LargeTopAppBarExample(emailPasswordAuthenticator: EmailPasswordAuthenticator
                 }
             },*/
         ) { innerPadding ->
-            ScrollContent(innerPadding)
+            when(selectedItemIndex){
+                0 -> ScrollContent(innerPadding)
+                1 -> ScannedHistory(innerPadding)
+                2 -> Profile(innerPadding)
+                3 -> Rewards(innerPadding)
+                4 -> Settings(innerPadding)
+            }
         }
     }
 }
@@ -227,6 +234,66 @@ fun ScrollContent(innerPadding: PaddingValues) {
     ) {
         items(range.count()) { index ->
             Text(text = "- List item number ${index + 1}")
+        }
+    }
+}
+
+@Composable
+fun ScannedHistory(innerPadding: PaddingValues){
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .consumeWindowInsets(innerPadding),
+        contentPadding = innerPadding,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item{
+            Text(text = "Placeholder Scanned History")
+        }
+    }
+}
+
+@Composable
+fun Profile(innerPadding: PaddingValues){
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .consumeWindowInsets(innerPadding),
+        contentPadding = innerPadding,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item{
+            Text(text = "Placeholder Profile")
+        }
+    }
+}
+
+@Composable
+fun Rewards(innerPadding: PaddingValues){
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .consumeWindowInsets(innerPadding),
+        contentPadding = innerPadding,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item{
+            Text(text = "Placeholder Rewards")
+        }
+    }
+}
+
+@Composable
+fun Settings(innerPadding: PaddingValues){
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .consumeWindowInsets(innerPadding),
+        contentPadding = innerPadding,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item{
+            Text(text = "Placeholder Settings")
         }
     }
 }
