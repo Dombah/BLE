@@ -1,4 +1,4 @@
-package com.domagojleskovic.bleadvert
+package com.domagojleskovic.bleadvert.viewmodels
 
 import androidx.lifecycle.ViewModel
 import javax.inject.Singleton

@@ -1,17 +1,18 @@
 package com.domagojleskovic.bleadvert.ui
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -28,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.domagojleskovic.bleadvert.R
@@ -42,11 +42,17 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
-import com.domagojleskovic.bleadvert.LoginRegisterViewModel
+import com.domagojleskovic.bleadvert.UserInfoStorage
+import com.domagojleskovic.bleadvert.viewmodels.LoginRegisterViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -54,6 +60,9 @@ fun RegisterScreen(
     emailPasswordAuthenticator: EmailPasswordAuthenticator,
     loginRegisterViewModel: LoginRegisterViewModel = LoginRegisterViewModel()
 ) {
+    val context = LocalContext.current
+    val userInfoStorage = UserInfoStorage(context)
+    val scope = rememberCoroutineScope()
     val buttonCurvature = 32.dp
     var passwordVisible by remember { mutableStateOf(false)}
 
@@ -85,11 +94,19 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row {
-                Image(painter = painterResource(id = R.drawable.feritlogo), contentDescription = null)
+                Image(
+                    painter = painterResource(id = R.drawable.logo_ble),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(128.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Crop,
+                )
             }
+            Spacer(modifier = Modifier.height(16.dp))
             Row {
                 Text(
-                    text = "Placeholder name",
+                    text = stringResource(id = R.string.app_name),
                     fontSize = 24.sp
                 )
             }
@@ -163,13 +180,25 @@ fun RegisterScreen(
             Button(
                 onClick = {
                     if(confirmPassword != password){
-                        // TODO: Show error message
+                        Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
                     }else{
                         isLoading = true
-                        emailPasswordAuthenticator.createAccount(email,password){
-                            isLoading = false
-                            onRegisterSuccess()
-                        }
+                        emailPasswordAuthenticator.createAccount(
+                            email,
+                            password,
+                            onSuccess = {
+                                isLoading = false
+                                scope.launch {
+                                    onRegisterSuccess()
+                                    Log.i("ButtonOnClick", "Success")
+                                    userInfoStorage.setEmailAndPassword(email, password)
+                                }
+                            },
+                            onFailure = {
+                                isLoading = false
+                                Toast.makeText(context, "Email already in use", Toast.LENGTH_SHORT).show()
+                            }
+                        )
                     }
                 },
                 modifier = Modifier.width(128.dp),
@@ -193,7 +222,19 @@ fun RegisterScreen(
             Row{
                 Button(
                     modifier = Modifier.width(180.dp),
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                        isLoading = true
+                        emailPasswordAuthenticator.signInAsGuest(
+                            onSuccess = {
+                                isLoading = false
+                                onRegisterSuccess()
+                            },
+                            onFailure = {
+                                isLoading = false
+                                Toast.makeText(context, "Failed creating guest user. Try again", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
                         contentColor = Color.Black

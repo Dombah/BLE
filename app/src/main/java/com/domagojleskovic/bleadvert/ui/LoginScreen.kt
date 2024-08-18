@@ -1,17 +1,33 @@
 package com.domagojleskovic.bleadvert.ui
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,9 +53,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -47,9 +66,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
-import com.domagojleskovic.bleadvert.LoginRegisterViewModel
+import com.domagojleskovic.bleadvert.viewmodels.LoginRegisterViewModel
 import com.domagojleskovic.bleadvert.R
+import com.domagojleskovic.bleadvert.User
 import com.domagojleskovic.bleadvert.UserInfoStorage
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -61,7 +82,7 @@ fun LoginScreenPreview() {
         onNavigateRegisterScreen = {},
         onNavigateForgotPasswordScreen = {},
         onLoginSuccess = {},
-        emailPasswordAuthenticator = EmailPasswordAuthenticator(),
+        emailPasswordAuthenticator = EmailPasswordAuthenticator.getInstance(),
     )
 }
 
@@ -73,6 +94,7 @@ fun LoginScreen(
     emailPasswordAuthenticator: EmailPasswordAuthenticator,
     loginRegisterViewModel: LoginRegisterViewModel = LoginRegisterViewModel()
 ) {
+
     val context = LocalContext.current
     val userInfoStorage = UserInfoStorage(context)
     val buttonCurvature = 32.dp
@@ -82,33 +104,26 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false)}
     val scope = rememberCoroutineScope()
 
+
     LaunchedEffect(Unit) {
         val savedEmail = userInfoStorage.getEmail.first()
         val savedPassword = userInfoStorage.getPassword.first()
         if (savedEmail.isNotEmpty() && savedPassword.isNotEmpty()) {
             isLoading = true
-            emailPasswordAuthenticator.signIn(savedEmail, savedPassword) {
-                isLoading = false
-                onLoginSuccess()
-            }
+            emailPasswordAuthenticator.signIn(
+                savedEmail,
+                savedPassword,
+                onSuccess = {
+                    isLoading = false
+                    onLoginSuccess()
+                },
+                onFailure = {
+                    isLoading = false
+                    Toast.makeText(context, "Credentials expired", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
-    /*
-    if(isLoggedIn.value){
-        email = userInfoStorage.getEmail.collectAsState(initial = "").value
-        password = userInfoStorage.getPassword.collectAsState(initial = "").value
-        Log.i("Password", password)
-        Log.i("Email", email)
-        if(email.isNotEmpty() && password.isNotEmpty() && !isReading){
-            isReading = true
-            isLoading = true
-            emailPasswordAuthenticator.signIn(email, password) {
-                isLoading = false
-                onLoginSuccess()
-                Log.i("StorageOnRead", "Success")
-            }
-        }
-    }*/
     if(isLoading){
         Column(
             modifier = Modifier
@@ -133,14 +148,17 @@ fun LoginScreen(
         ) {
             Row {
                 Image(
-                    painter = painterResource(id = R.drawable.feritlogo),
+                    painter = painterResource(id = R.drawable.logo_ble),
                     contentDescription = null,
-                    modifier = Modifier.width(200.dp)
+                    modifier = Modifier.size(128.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Crop,
                 )
             }
+            Spacer(modifier = Modifier.height(16.dp))
             Row {
                 Text(
-                    text = "Placeholder name",
+                    text = stringResource(id = R.string.app_name),
                     fontSize = 24.sp
                 )
             }
@@ -208,14 +226,22 @@ fun LoginScreen(
             Button(
                 onClick = {
                     isLoading = true
-                    emailPasswordAuthenticator.signIn(email, password){
-                        isLoading = false
-                        scope.launch {
-                            onLoginSuccess()
-                            Log.i("ButtonOnClick", "Success")
-                            userInfoStorage.setEmailAndPassword(email, password)
+                    emailPasswordAuthenticator.signIn(
+                        email,
+                        password,
+                        onSuccess = {
+                            isLoading = false
+                            scope.launch {
+                                onLoginSuccess()
+                                Log.i("ButtonOnClick", "Success")
+                                userInfoStorage.setEmailAndPassword(email, password)
+                            }
+                        },
+                        onFailure = {
+                            isLoading = false
+                            Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
                         }
-                    }
+                    )
                 },
                 modifier = Modifier.width(128.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -233,4 +259,27 @@ fun LoginScreen(
         }
     }
 }
+
+fun hasSinglePermission(permission: String, context: Context): Boolean {
+    return ActivityCompat.checkSelfPermission(
+        context,
+        permission
+    ) == PackageManager.PERMISSION_GRANTED
+}
+fun askSinglePermission(
+    singlePermissionLauncher: ActivityResultLauncher<String>,
+    permission: String,
+    context: Context,
+    actionIfAlreadyGranted: () -> Unit
+) {
+    if (!hasSinglePermission(permission, context)) {
+        //Launching contract permission launcher for the required permissions
+        singlePermissionLauncher.launch(permission)
+    } else {
+        //Permission is already granted so we execute the actionIfAlreadyGranted
+        actionIfAlreadyGranted()
+    }
+}
+
+
 
