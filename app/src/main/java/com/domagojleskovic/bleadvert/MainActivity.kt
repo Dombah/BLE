@@ -44,6 +44,12 @@ import kotlinx.coroutines.launch
 import java.math.RoundingMode
 import kotlin.math.pow
 
+/*
+val regex = "//(https?://[^\\s]+)"
+    val matchResult = Regex(regex).find(input)
+    */
+
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var bluetoothAdapter: BluetoothAdapter
@@ -137,9 +143,6 @@ class MainActivity : ComponentActivity() {
                                 onNavigateRegisterScreen = {
                                     navController.navigate("register")
                                 },
-                                onNavigateForgotPasswordScreen = {
-                                    navController.navigate("forgot_password")
-                                },
                                 onLoginSuccess = {
                                     navController.navigate("home_screen")
                                 },
@@ -158,6 +161,9 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(
                                 onRegisterSuccess = {
                                     navController.navigate("home_screen")
+                                },
+                                onNavigateLoginScreen = {
+                                    navController.popBackStack()
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator
                             )
@@ -221,10 +227,10 @@ class MainActivity : ComponentActivity() {
                     // if(beacon?.url?.isEmpty() == true) modifyBeaconViewModel.setBeaconUrl(beacon, url)
                     val distance = getDistance(rssi)
                     modifyBeaconViewModel.updateDistances(beacon, distance)
-                    Log.i("Beacon", "$beacon")
+                    // Log.i("Beacon", "$beacon")
                     val avgDistance = modifyBeaconViewModel.averageDistance(beacon)
 
-                    Log.d("Beacons","Beacon ${beacon?.address} - Average Distance: $avgDistance meters")
+                    // Log.d("Beacons","Beacon ${beacon?.address} - Average Distance: $avgDistance meters")
                 }
             }
         }

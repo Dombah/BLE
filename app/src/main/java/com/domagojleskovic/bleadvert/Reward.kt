@@ -1,6 +1,7 @@
 package com.domagojleskovic.bleadvert
 
 import android.net.Uri
+import com.google.firebase.firestore.DocumentSnapshot
 
 data class Reward(
     val title: String = "",
@@ -15,6 +16,21 @@ data class Reward(
             "image" to image.toString(),
             "requiredScans" to requiredScans
         )
+    }
+    companion object {
+        fun parseFrom(document: DocumentSnapshot) : MutableList<Reward>{
+            val rewards = (document.get("rewards") as? List<*>)?.mapNotNull { item ->
+                (item as? Map<String, Any>)?.let { rewardData ->
+                    Reward(
+                        title = rewardData["title"] as? String ?: "",
+                        description = rewardData["description"] as? String ?: "",
+                        image = Uri.parse(rewardData["image"] as? String ?: ""),
+                        requiredScans = (rewardData["requiredScans"] as? Long ?: 0L).toInt()
+                    )
+                }
+            } ?: emptyList()
+            return rewards.toMutableList()
+        }
     }
 }
 

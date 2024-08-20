@@ -26,16 +26,7 @@ data class Event (
             val imageUri = document.getString("imageUri") ?: ""
             val startDate = document.getDate("startDate")
             val endDate = document.getDate("endDate")
-            val rewards = (document.get("rewards") as? List<*>)?.mapNotNull { item ->
-                (item as? Map<String, Any>)?.let { rewardData ->
-                    Reward(
-                        title = rewardData["title"] as? String ?: "",
-                        description = rewardData["description"] as? String ?: "",
-                        image = Uri.parse(rewardData["image"] as? String ?: ""),
-                        requiredScans = (rewardData["requiredScans"] as? Long ?: 0L).toInt()
-                    )
-                }
-            } ?: emptyList()
+            val rewards = Reward.parseFrom(document)
             val uri = Uri.parse(imageUri)
 
             return Event(

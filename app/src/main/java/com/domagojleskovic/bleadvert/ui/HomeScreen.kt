@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Discount
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Bluetooth
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Discount
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
@@ -90,7 +92,9 @@ import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.domagojleskovic.bleadvert.Beacon
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
+import com.domagojleskovic.bleadvert.Event
 import com.domagojleskovic.bleadvert.R
+import com.domagojleskovic.bleadvert.User
 import com.domagojleskovic.bleadvert.UserInfoStorage
 import com.domagojleskovic.bleadvert.viewmodels.AdminViewModel
 import com.domagojleskovic.bleadvert.viewmodels.ModifyBeaconsViewModel
@@ -136,12 +140,11 @@ fun HomeTopBar(
     adminViewModel: AdminViewModel,
     toggleScanning: () -> Unit
 ) {
-
     val currentUser = EmailPasswordAuthenticator.currentUser
     val isAdmin = currentUser?.isAdmin
-    if(currentUser != null && isAdmin == false){
-        rewardsViewModel.fetchRewards(EmailPasswordAuthenticator.currentUser!!)
-    }
+    // if(currentUser != null && isAdmin == false){
+    //     rewardsViewModel.fetchRewards(EmailPasswordAuthenticator.currentUser!!)
+    // }
     val context = LocalContext.current
     val userInfoStorage = UserInfoStorage(context)
     val gesturesEnabled by sharedViewModel.gesturesEnabled.collectAsState()
@@ -155,16 +158,17 @@ fun HomeTopBar(
                     innerPadding = padding,
                     toggleScanning = toggleScanning,
                     sharedViewModel = sharedViewModel,
+                    currentUser = currentUser,
                     modifyBeaconsViewModel = modifyBeaconsViewModel,
                 )
             }
         ),
-        if (isAdmin == false) NavigationItem(
+        /*if (isAdmin == false)*/ NavigationItem(
             title = "Scanned History",
             selectedIcon = Icons.Filled.Bluetooth,
             unselectedIcon = Icons.Outlined.Bluetooth,
             content = { padding -> ScannedHistory(innerPadding = padding)}
-        )else null,
+        )/*else null*/,
         if (isAdmin == true) NavigationItem(
             title = "Modify Beacons",
             selectedIcon = Icons.Filled.Bluetooth,
@@ -308,6 +312,7 @@ fun ScrollContent(
     innerPadding: PaddingValues,
     sharedViewModel: SharedViewModel,
     modifyBeaconsViewModel: ModifyBeaconsViewModel,
+    currentUser: User?,
     toggleScanning : () -> Unit,
 ) {
 
@@ -387,13 +392,24 @@ fun ScrollContent(
     val beacons by modifyBeaconsViewModel.beacons.collectAsState()
     val noneVirtualBeacon = Beacon(address = "None", maximumAdvertisementDistance = Double.MAX_VALUE)
 
-
+    val oldClosestBeacon = remember { mutableStateOf<Beacon?>(null) }
+    // processUserEventScan
     LaunchedEffect(sharedViewModel.scanning.value) {
         while (sharedViewModel.scanning.value) {
             val validBeacons = beacons.filter { modifyBeaconsViewModel.averageDistance(it) <= it.maximumAdvertisementDistance }
             val closest = validBeacons.minByOrNull { modifyBeaconsViewModel.averageDistance(it) }
-            Log.i("ClosestBeacon", closest.toString())
-            sharedViewModel.setClosestBeacon(closest ?: noneVirtualBeacon)
+            if (closest != oldClosestBeacon.value) {
+                sharedViewModel.setClosestBeacon(closest ?: noneVirtualBeacon)
+                if(closest != null){
+                    sharedViewModel.processUserEventScan(
+                        user = currentUser ?: User(),
+                        event = sharedViewModel.activeEvent.value ?: Event(),
+                        scannedBeacon = closest
+                    )
+                }
+                oldClosestBeacon.value = closest
+                oldClosestBeacon.value?.let { Log.i("ClosestBeacon", it.address) }
+            }
             delay(50)
         }
     }

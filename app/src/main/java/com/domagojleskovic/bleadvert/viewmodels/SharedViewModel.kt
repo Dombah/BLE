@@ -1,12 +1,9 @@
 package com.domagojleskovic.bleadvert.viewmodels
 
-import android.bluetooth.le.ScanRecord
 import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.domagojleskovic.bleadvert.Beacon
 import com.domagojleskovic.bleadvert.DatabaseAccessObject
 import com.domagojleskovic.bleadvert.Event
@@ -30,6 +27,8 @@ class SharedViewModel : ViewModel() {
     private val _activeEvent = MutableStateFlow<Event?>(null)
     val activeEvent: StateFlow<Event?> = _activeEvent
 
+    private val dao = DatabaseAccessObject.getInstance()
+
     fun setClosestBeacon(beacon: Beacon?) {
         viewModelScope.launch {
             _closestBeacon.emit(beacon)
@@ -47,8 +46,17 @@ class SharedViewModel : ViewModel() {
     }
     fun setActiveEvent(){
         viewModelScope.launch {
-            _activeEvent.value = DatabaseAccessObject.getInstance().processActiveEvents()
+            _activeEvent.value = dao.processActiveEvents()
             Log.i("Current event", "${activeEvent.value}")
+        }
+    }
+    fun processUserEventScan(user: User, event: Event, scannedBeacon: Beacon){
+        viewModelScope.launch {
+            dao.processUserEventScan(
+                user,
+                event,
+                scannedBeacon
+            )
         }
     }
 }

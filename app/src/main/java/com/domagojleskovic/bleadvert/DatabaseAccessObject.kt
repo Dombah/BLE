@@ -9,8 +9,12 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -35,9 +39,13 @@ class DatabaseAccessObject private constructor() {
             }
     }
 
-    private fun getStorageReference(path : String) : StorageReference {
-        return FirebaseStorage.getInstance().reference.
-        child(path)
+    fun forgotPassword(email: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit){
+
+    }
+
+
+    private fun getStorageReference(path: String): StorageReference {
+        return FirebaseStorage.getInstance().reference.child(path)
     }
 
     suspend fun addEvent(
@@ -45,14 +53,15 @@ class DatabaseAccessObject private constructor() {
         title: String,
         description: String,
         imageUri: String,
-        startDate : String,
-        endDate : String,
+        startDate: String,
+        endDate: String,
         rewards: List<Reward>,
     ) {
         var eventImageUri = Uri.EMPTY
         // Upload main event image
-        if(imageUri.isNotEmpty()){
-            val imageRef = getStorageReference("images/${UUID.randomUUID()}/${imageUri.toUri().lastPathSegment}")
+        if (imageUri.isNotEmpty()) {
+            val imageRef =
+                getStorageReference("images/${UUID.randomUUID()}/${imageUri.toUri().lastPathSegment}")
             eventImageUri = uploadImage(imageUri, imageRef)
         }
         val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
@@ -130,7 +139,7 @@ class DatabaseAccessObject private constructor() {
         }
     }
 
-    suspend fun processActiveEvents() : Event? {
+    suspend fun processActiveEvents(): Event? {
         val db = FirebaseFirestore.getInstance()
 
         val activeEventsRef = db.collection("events")
@@ -151,7 +160,7 @@ class DatabaseAccessObject private constructor() {
             var activeEvent: Event? = null
 
             for (document in snapshot.documents) {
-                val event =  Event.parseFrom(document)
+                val event = Event.parseFrom(document)
                 if (currentDate > event.endDate) {
                     val eventData = Event.getFirebaseModifiedEvent(
                         id = event.id,
@@ -170,7 +179,6 @@ class DatabaseAccessObject private constructor() {
                 }
             }
 
-            // Remove dummy field from expired_events document after processing
             db.collection("events")
                 .document("expired_events")
                 .update(mapOf("dummy" to FieldValue.delete()))
@@ -183,20 +191,20 @@ class DatabaseAccessObject private constructor() {
         } catch (e: Exception) {
             e.printStackTrace()
             return null
-            // Handle the error appropriately
         }
     }
 
     fun fetchActiveEvents(onSuccess: (List<Event>) -> Unit) {
         db.collection("events").document("active_events").collection("events").get()
             .addOnSuccessListener { result ->
-                if(result.isEmpty){
+                if (result.isEmpty) {
                     Log.i("DatabaseAccessObject", "No active events found")
                     onSuccess(emptyList())
                     return@addOnSuccessListener
                 }
                 val events = result.map { document ->
                     Event.parseFrom(document)
+
                 }
                 onSuccess(events)
             }
@@ -205,21 +213,79 @@ class DatabaseAccessObject private constructor() {
                 onSuccess(emptyList())
             }
     }
-    // fun fetchActiveEvent()
-    // fun moveEventToExpiredCollection()
+
+    fun processUserEventScan(user: User, event: Event, scannedBeacon: Beacon) {
+        val userEventRef = db.collection("users").document(user.id)
+            .collection("eventRewards").document(event.id)
+        val userInfoRef = db.collection("users").document(user.id)
+            .collection("info").document("generalInfo")
+
+        try {
+            db.runTransaction { transaction ->
+                val userEventDoc = transaction.get(userEventRef)
+                var userEventProgress = UserEventProgress.parseFrom(userEventDoc)
+                Log.i("UserEventProgress", userEventProgress.toString())
+                if (userEventProgress == null) {
+                    userEventProgress = UserEventProgress(
+                        scans = 0,
+                        unlockedRewards = mutableListOf(),
+                        scannedBeaconAddresses = mutableListOf(),
+                    )
+                }
+
+                val userInfoDoc = transaction.get(userInfoRef)
+                val userScans = userInfoDoc.getLong("scans") ?: 0
+                val globalRewards = Reward.parseFrom(userInfoDoc)
+
+                // Check if the beacon was already scanned
+                if (!userEventProgress.scannedBeaconAddresses.contains("${scannedBeacon.address}//${scannedBeacon.url}")) {
+                    userEventProgress.scans += 1
+                    userEventProgress.scannedBeaconAddresses.add("${scannedBeacon.address}//${scannedBeacon.url}")
+
+                    for (reward in event.rewards) {
+                        if (userEventProgress.scans >= reward.requiredScans &&
+                            !userEventProgress.unlockedRewards.contains(reward)
+                        ) {
+                            userEventProgress.unlockedRewards.add(reward)
+                            if(!globalRewards.contains(reward)){
+                                globalRewards.add(reward)
+                            }
+                        }
+                    }
+
+                    val updatedUserInfo = mapOf(
+                        "scans" to userScans + 1,
+                        "rewards" to globalRewards
+                    )
+                    transaction.update(userInfoRef, updatedUserInfo)
+
+                    transaction.set(userEventRef, userEventProgress, SetOptions.merge())
+                }
+            }.addOnFailureListener { e ->
+                e.printStackTrace()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+
     fun addUser(user: User, onSuccess: () -> Unit) {
 
         val userData = hashMapOf(
             "id" to user.id,
             "admin" to user.isAdmin,
-            "name" to user.name
+            "name" to user.name,
+            "scans" to user.scans,
+            "rewards" to user.rewards,
         )
         // Add dummy field so that the document isn't virtual
         db.collection("users").document(user.id).set(mapOf("dummy" to "dummy"))
         db.collection("users")
             .document(user.id)
             .collection("info")
-            .add(userData)
+            .document("generalInfo")
+            .set(userData)
             .addOnSuccessListener {
                 onSuccess()
             }
@@ -240,11 +306,12 @@ class DatabaseAccessObject private constructor() {
             db.collection("users")
                 .document(user.uid)
                 .collection("info")
+                .document("generalInfo")
                 .get()
-                .addOnSuccessListener { querySnapshot ->
-                    if (querySnapshot != null && !querySnapshot.isEmpty) {
-                        val document = querySnapshot.documents[0]
-                        val parsedUser = document.toObject(User::class.java)
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        val parsedUser = User.parseFrom(documentSnapshot)
+                        Log.d(TAG, "Parsed user: $parsedUser")
                         callback(parsedUser)
                     } else {
                         Log.w(TAG, "No such document")
@@ -260,6 +327,7 @@ class DatabaseAccessObject private constructor() {
             callback(null)
         }
     }
+
 
     fun fetchBeacons(onSuccess: (List<Beacon>?) -> Unit) {
         db.collection("beacons").get()
@@ -292,13 +360,15 @@ class DatabaseAccessObject private constructor() {
                 documentReference.update("id", documentId)
                     .addOnSuccessListener {
                         Log.d(TAG, "DocumentSnapshot successfully updated with ID field")
-                        Toast.makeText(context, "Successfully added beacon", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Successfully added beacon", Toast.LENGTH_SHORT)
+                            .show()
                         val beaconWithID = beacon.copy(id = documentId)
                         onSuccess(beaconWithID)
                     }
                     .addOnFailureListener { exception ->
                         Log.w(TAG, "Error updating document with ID field", exception)
-                        Toast.makeText(context, "Error updating beacon ID", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Error updating beacon ID", Toast.LENGTH_SHORT)
+                            .show()
                     }
             }
             .addOnFailureListener { exception ->
@@ -307,7 +377,12 @@ class DatabaseAccessObject private constructor() {
             }
     }
 
-    fun updateBeacon(context: Context, oldBeacon: Beacon, newBeacon: Beacon, onSuccess: (List<Beacon>?) -> Unit) {
+    fun updateBeacon(
+        context: Context,
+        oldBeacon: Beacon,
+        newBeacon: Beacon,
+        onSuccess: (List<Beacon>?) -> Unit
+    ) {
         val beaconData = hashMapOf(
             "id" to oldBeacon.id,
             "address" to newBeacon.address,
@@ -319,134 +394,23 @@ class DatabaseAccessObject private constructor() {
         db.collection("beacons").document(oldBeacon.id)
             .set(beaconData)
             .addOnSuccessListener {
-                fetchBeacons{ beaconsOrNull ->
-                    Toast.makeText(context,"Successfully updated beacon", Toast.LENGTH_SHORT).show()
+                fetchBeacons { beaconsOrNull ->
+                    Toast.makeText(context, "Successfully updated beacon", Toast.LENGTH_SHORT)
+                        .show()
                     onSuccess(beaconsOrNull)
                 }
             }
             .addOnFailureListener { exception ->
                 Log.e("DatabaseAccessObject", "Error updating beacon", exception)
-                Toast.makeText(context,"Error updating beacon", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error updating beacon", Toast.LENGTH_SHORT).show()
             }
     }
 
-    /*
-    private fun addRewardToUserWithID(
-        context: Context,
-        userID: String,
-        reward: Reward,
-        showToast: Boolean = true,
-        onSuccess: () -> Unit,
+    fun fetchRewards(
+        user: User,
+        onSuccess: (List<Reward>) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        val rewardRef = db.collection("users").document(userID).collection("rewards").document()
-
-        rewardRef.set(reward.copy(rewardId = rewardRef.id))
-            .addOnSuccessListener {
-                if(showToast){
-                    Toast.makeText(context,"Successfully added reward to user", Toast.LENGTH_SHORT).show()
-                }
-                onSuccess()
-            }
-            .addOnFailureListener { exception ->
-                onFailure(exception)
-            }
-    }*/
-
-    /* Old way of adding reward to user
-    fun addRewardToUser(
-        context: Context,
-        name: String,
-        reward: Reward,
-        onSuccess: () -> Unit,
-        onFailure: (Exception) -> Unit
-    ) {
-        db.collection("users")
-            .get()
-            .addOnSuccessListener { usersSnapshot ->
-                var userFound = false
-                var completedQueries = 0
-
-                usersSnapshot.documents.forEach { userDoc ->
-                    userDoc.reference.collection("info").whereEqualTo("name", name)
-                        .get()
-                        .addOnSuccessListener { infoSnapshot ->
-                            completedQueries++
-                            if (!infoSnapshot.isEmpty && !userFound) {
-                                val user = infoSnapshot.documents[0].toObject(User::class.java)
-                                if (user != null) {
-                                    userFound = true
-                                    addRewardToUserWithID(context,user.id, reward, onSuccess = onSuccess, onFailure = onFailure)
-                                    Log.i("DatabaseAccessObject", "User found: ${user.name}")
-                                }
-                            }
-                            if (completedQueries == usersSnapshot.documents.size && !userFound) {
-                                Log.i("DatabaseAccessObject", "No user found")
-                                Toast.makeText(context,"User not found", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        .addOnFailureListener { exception ->
-                            Toast.makeText(context,"Failed adding reward to user", Toast.LENGTH_SHORT).show()
-                            onFailure(exception)
-                        }
-                }
-            }
-            .addOnFailureListener { exception ->
-                Toast.makeText(context,"Failed adding reward to user", Toast.LENGTH_SHORT).show()
-                onFailure(exception)
-            }
-    }
-    */
-
-
-    /* Old way of giving reward to users with random selection
-    fun giveRewardToRandomUser(context : Context, reward: Reward, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-        db.collection("users")
-            .get()
-            .addOnSuccessListener { usersSnapshot ->
-                val nonAdminUsers = mutableListOf<User>()
-                val userFetchTasks = usersSnapshot.documents.map { userDoc ->
-                    userDoc.reference.collection("info")
-                        .get()
-                        .addOnSuccessListener { infoSnapshot ->
-                            for (document in infoSnapshot.documents) {val user = document.toObject(User::class.java)
-                                Log.i(TAG, "User: ${user?.name} ${user?.isAdmin}")
-                                if (user != null && !user.isAdmin) {
-                                    nonAdminUsers.add(user)
-                                }
-                            }
-                        }
-                        .addOnFailureListener {
-                            Log.e(TAG, "Error fetching user info", it)
-                            Toast.makeText(context, "Error fetching user info", Toast.LENGTH_SHORT).show()
-                        }
-                }
-                Tasks.whenAllComplete(userFetchTasks).addOnSuccessListener {
-                    if (nonAdminUsers.isNotEmpty()) {
-                        val randomUser = nonAdminUsers.random()
-                        Log.i("DatabaseAccessObject", "Random user: ${randomUser.name}")
-                        addRewardToUserWithID(
-                            context,randomUser.id,
-                            reward,
-                            showToast = false,
-                            onSuccess = onSuccess,
-                            onFailure = onFailure
-                        )
-                        Toast.makeText(context, "Random reward given to ${randomUser.name}", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "No non-admin users found", Toast.LENGTH_SHORT).show()
-                        Log.w("DatabaseAccessObject", "No non-admin users found")
-                    }
-                }
-            }
-            .addOnFailureListener { exception ->
-                onFailure(exception)
-            }
-    }
-    */
-
-
-    fun fetchRewards(user : User, onSuccess: (List<Reward>) -> Unit, onFailure: (Exception) -> Unit){
         db.collection("users").document(user.id).collection("rewards")
             .get()
             .addOnSuccessListener { result ->
@@ -460,11 +424,21 @@ class DatabaseAccessObject private constructor() {
             }
     }
 
-    fun addAdminPrivilegeTo(context: Context, name: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    fun addAdminPrivilegeTo(
+        context: Context,
+        name: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
         modifyAdminPrivilege(context, name, true, onSuccess, onFailure)
     }
 
-    fun revokeAdminPrivilegeFrom(context: Context, name: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    fun revokeAdminPrivilegeFrom(
+        context: Context,
+        name: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
         modifyAdminPrivilege(context, name, false, onSuccess, onFailure)
     }
 
@@ -493,8 +467,13 @@ class DatabaseAccessObject private constructor() {
                                 userFound = true
                                 infoDoc.reference.update("admin", makeAdmin)
                                     .addOnSuccessListener {
-                                        val action = if (makeAdmin) "gave admin to" else "revoked admin from"
-                                        Toast.makeText(context, "Successfully $action $name", Toast.LENGTH_SHORT).show()
+                                        val action =
+                                            if (makeAdmin) "gave admin to" else "revoked admin from"
+                                        Toast.makeText(
+                                            context,
+                                            "Successfully $action $name",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                         onSuccess()
                                     }
                                     .addOnFailureListener(onFailure)
