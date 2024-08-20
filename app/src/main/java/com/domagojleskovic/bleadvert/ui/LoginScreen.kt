@@ -277,8 +277,10 @@ fun LoginScreen(
     if(showForgotPasswordDialog){
         ForgotPasswordDialog(
             onDismissRequest = { showForgotPasswordDialog = false },
-            onConfirm = {
-
+            onConfirm = { enteredEmail ->
+                emailPasswordAuthenticator.forgotPassword(context,enteredEmail){
+                    showForgotPasswordDialog = false
+                }
             }
         )
     }
@@ -316,7 +318,7 @@ fun ForgotPasswordDialog(
                     onConfirm(email)
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MainBlue // Assuming `MainBlue` is defined elsewhere
+                    containerColor = MainBlue
                 )
             ) {
                 Text(
@@ -337,182 +339,6 @@ fun ForgotPasswordDialog(
         }
     )
 }
-/*
-@Composable
-fun LoginScreen(
-    onNavigateRegisterScreen: () -> Unit,
-    onNavigateForgotPasswordScreen: () -> Unit,
-    onLoginSuccess : () -> Unit,
-    emailPasswordAuthenticator: EmailPasswordAuthenticator,
-    loginRegisterViewModel: LoginRegisterViewModel = LoginRegisterViewModel()
-) {
-
-    val context = LocalContext.current
-    val userInfoStorage = UserInfoStorage(context)
-    val buttonCurvature = 32.dp
-    var passwordVisible by remember { mutableStateOf(false)}
-    var email by remember { mutableStateOf("d@g.com")} // TODO REMOVE ON RELEASE
-    var password by remember { mutableStateOf("123456")} // TODO REMOVE ON RELEASE
-    var isLoading by remember { mutableStateOf(false)}
-    val scope = rememberCoroutineScope()
-
-
-    LaunchedEffect(Unit) {
-        val savedEmail = userInfoStorage.getEmail.first()
-        val savedPassword = userInfoStorage.getPassword.first()
-        if (savedEmail.isNotEmpty() && savedPassword.isNotEmpty()) {
-            isLoading = true
-            emailPasswordAuthenticator.signIn(
-                savedEmail,
-                savedPassword,
-                onSuccess = {
-                    isLoading = false
-                    onLoginSuccess()
-                },
-                onFailure = {
-                    isLoading = false
-                    Toast.makeText(context, "Credentials expired", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-    }
-    if(isLoading){
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.width(96.dp),
-                color = MaterialTheme.colorScheme.secondary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            )
-        }
-    }else{
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 100.dp)
-                .safeContentPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row {
-                Image(
-                    painter = painterResource(id = R.drawable.logo_ble),
-                    contentDescription = null,
-                    modifier = Modifier.size(128.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row {
-                Text(
-                    text = stringResource(id = R.string.app_name),
-                    fontSize = 24.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row {
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                    },
-                    shape = RoundedCornerShape(buttonCurvature),
-                    label = {
-                        Text(text = "email:")
-                    },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Filled.Person, contentDescription = null)
-                    }
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row {
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                    },
-                    shape = RoundedCornerShape(buttonCurvature),
-                    label = {
-                        Text(text = "Password:")
-                    },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    trailingIcon = {
-                        val icon = if(passwordVisible)
-                            Icons.Filled.Visibility
-                        else
-                            Icons.Filled.VisibilityOff
-                        val description = if (passwordVisible) "Hide password" else "Show password"
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = icon,
-                                description,
-                                tint = Color.Black
-                            )
-                        }
-                    },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
-                    }
-                )
-            }
-            Spacer(modifier = Modifier.padding(top = 8.dp))
-            Row(
-                horizontalArrangement = Arrangement.End
-            ){
-                ClickableText(
-                    text = AnnotatedString("Forgot password?"),
-                    onClick = {
-                        onNavigateForgotPasswordScreen()
-                    },
-                    modifier = Modifier.padding(start = 128.dp)
-                )
-            }
-            Spacer(modifier = Modifier.padding(top = 12.dp))
-            Button(
-                onClick = {
-                    isLoading = true
-                    emailPasswordAuthenticator.signIn(
-                        email,
-                        password,
-                        onSuccess = {
-                            isLoading = false
-                            scope.launch {
-                                onLoginSuccess()
-                                Log.i("ButtonOnClick", "Success")
-                                userInfoStorage.setEmailAndPassword(email, password)
-                            }
-                        },
-                        onFailure = {
-                            isLoading = false
-                            Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                },
-                modifier = Modifier.width(128.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black
-                ),
-
-                ) {
-                Text(text = "Log in")
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            Row(modifier = Modifier.padding(bottom = 32.dp)){
-                Text(text = "Not a member?  ")
-                ClickableText(text = AnnotatedString("Sign up"), onClick = {onNavigateRegisterScreen()})
-            }
-        }
-    }
-}
-
- */
 
 fun hasSinglePermission(permission: String, context: Context): Boolean {
     return ActivityCompat.checkSelfPermission(

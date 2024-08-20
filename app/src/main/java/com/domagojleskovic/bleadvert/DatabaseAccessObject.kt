@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.net.toUri
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -38,11 +39,6 @@ class DatabaseAccessObject private constructor() {
                 instance ?: DatabaseAccessObject().also { instance = it }
             }
     }
-
-    fun forgotPassword(email: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit){
-
-    }
-
 
     private fun getStorageReference(path: String): StorageReference {
         return FirebaseStorage.getInstance().reference.child(path)

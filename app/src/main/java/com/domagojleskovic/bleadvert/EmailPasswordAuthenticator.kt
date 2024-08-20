@@ -1,6 +1,8 @@
 package com.domagojleskovic.bleadvert
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.google.firebase.Firebase
@@ -27,7 +29,19 @@ class EmailPasswordAuthenticator private constructor() {
             }
 
     }
-
+    fun forgotPassword(context : Context, email: String, onSuccess: (Boolean) -> Unit){
+        auth.sendPasswordResetEmail(email)
+            .addOnSuccessListener {
+                Toast.makeText(context, "Successfully sent email to: $email", Toast.LENGTH_LONG)
+                    .show()
+                onSuccess(true)
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "Error sending email. Try again", Toast.LENGTH_LONG)
+                    .show()
+                onSuccess(false)
+            }
+    }
     fun createAccount(email: String, password: String, isAdmin : Boolean = false, onSuccess: () -> Unit, onFailure: () -> Unit) {
         // [START create_user_with_email]
         auth.createUserWithEmailAndPassword(email, password)

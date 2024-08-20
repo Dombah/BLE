@@ -31,7 +31,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.domagojleskovic.bleadvert.ui.ForgotPasswordScreen
 import com.domagojleskovic.bleadvert.ui.HomeScreen
 import com.domagojleskovic.bleadvert.ui.LoginScreen
 import com.domagojleskovic.bleadvert.ui.RegisterScreen
@@ -42,6 +41,7 @@ import com.domagojleskovic.bleadvert.viewmodels.RewardsViewModel
 import com.domagojleskovic.bleadvert.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
 import java.math.RoundingMode
+import kotlin.math.log
 import kotlin.math.pow
 
 /*
@@ -99,9 +99,14 @@ class MainActivity : ComponentActivity() {
     var beacons = mutableListOf<Beacon>()
 
     private fun initializeBluetooth(){
-        bluetoothManager = getSystemService(BluetoothManager::class.java)
-        bluetoothAdapter = bluetoothManager.adapter!!
-        bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+        try {
+            bluetoothManager = getSystemService(BluetoothManager::class.java)
+            bluetoothAdapter = bluetoothManager.adapter
+            bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+        }catch(e : Exception) {
+            Log.i("MainActivity","Failed initializing bluetooth\n$e")
+        }
+
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -166,20 +171,6 @@ class MainActivity : ComponentActivity() {
                                     navController.popBackStack()
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator
-                            )
-                        }
-                        composable("forgot_password",
-                            enterTransition = {
-                                fadeIn(
-                                    animationSpec = tween(
-                                        300, easing = LinearEasing
-                                    )
-                                )
-                            },){
-                            ForgotPasswordScreen(
-                                onSubmitEmail = {
-                                    navController.popBackStack()
-                                }
                             )
                         }
                         composable(
