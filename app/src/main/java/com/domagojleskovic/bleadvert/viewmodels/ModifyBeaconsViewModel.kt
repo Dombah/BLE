@@ -3,6 +3,7 @@ package com.domagojleskovic.bleadvert.viewmodels
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import coil.compose.AsyncImagePainter
 import com.domagojleskovic.bleadvert.Beacon
 import com.domagojleskovic.bleadvert.DatabaseAccessObject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,19 +25,38 @@ class ModifyBeaconsViewModel(
         }
     }
 
-    fun addBeacon(context: Context, beacon: Beacon) {
+    fun addBeacon(context: Context, beacon: Beacon, onSuccess: () -> Unit) {
         databaseAccessObject.addBeacon(context, beacon){  result ->
             _beacons.value += result
+            onSuccess()
         }
     }
 
-    fun updateBeacon(context: Context, oldBeacon: Beacon, newBeacon: Beacon){
+    fun updateBeacon(
+        context: Context,
+        oldBeacon: Beacon,
+        newBeacon: Beacon,
+        onSuccess: () -> Unit
+    ){
         databaseAccessObject.updateBeacon(context, oldBeacon, newBeacon){ result ->
             _beacons.value = result ?: emptyList()
+            onSuccess()
         }
     }
+
+    fun deleteBeacon(
+        context: Context,
+        beacon: Beacon,
+        onSuccess: () -> Unit
+    ){
+        databaseAccessObject.deleteBeacon(context, beacon){
+            _beacons.value = _beacons.value.filter { it != beacon }
+            onSuccess()
+        }
+    }
+
     fun updateDistances(beacon: Beacon?, newDistance: Double) {
-        val n = 8
+        val n = 6
         if (beacon != null && _beacons.value.contains(beacon)) {
             val updatedBeacons = _beacons.value.map {
                 if (it == beacon) {
@@ -62,18 +82,4 @@ class ModifyBeaconsViewModel(
             100000.0
         }
     }
-    /*
-    fun setBeaconUrl(beacon: Beacon? , url : String){
-        if (beacon != null && _beacons.value.contains(beacon)) {
-            val updatedBeacons = _beacons.value.map {
-                if (it == beacon) {
-                    it.copy(url = url)
-                } else {
-                    it
-                }
-            }
-            _beacons.value = updatedBeacons
-        }
-    }
-     */
 }

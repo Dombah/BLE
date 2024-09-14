@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -59,6 +60,8 @@ import androidx.core.app.ActivityCompat
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
 import com.domagojleskovic.bleadvert.R
 import com.domagojleskovic.bleadvert.UserInfoStorage
+import com.domagojleskovic.bleadvert.ui.theme.DarkGrayishBlue
+import com.domagojleskovic.bleadvert.ui.theme.DarkSurface
 import com.domagojleskovic.bleadvert.ui.theme.MainBlue
 import com.domagojleskovic.bleadvert.ui.theme.Typography
 import com.domagojleskovic.bleadvert.viewmodels.LoginRegisterViewModel
@@ -82,8 +85,9 @@ fun LoginScreen(
     loginRegisterViewModel: LoginRegisterViewModel = LoginRegisterViewModel(),
 ) {
 
+    val isSystemInDarkTheme = isSystemInDarkTheme()
     val appName = stringResource(id = R.string.app_name)
-    val uiColor = if(isSystemInDarkTheme()) Color.Black else Color.White
+    val uiColor = if(isSystemInDarkTheme) Color.White else Color.Black
     val context = LocalContext.current
     val userInfoStorage = UserInfoStorage(context)
     var passwordVisible by remember { mutableStateOf(false)}
@@ -134,7 +138,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.40f)
-                    .background(MainBlue)
+                    .background(if (isSystemInDarkTheme) DarkGrayishBlue else MainBlue)
                     .padding(16.dp)
             ) {
                 Column(
@@ -150,7 +154,7 @@ fun LoginScreen(
             }
             Surface(
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                color = Color.White,
+                color = if(isSystemInDarkTheme) DarkSurface else Color.White,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -164,7 +168,7 @@ fun LoginScreen(
                 ) {
                     Text(
                         text = "Login",
-                        color = Color.Black,
+                        color = uiColor,
                         style = Typography.headlineMedium.copy(fontSize = 32.sp)
                     )
                 }
@@ -204,7 +208,7 @@ fun LoginScreen(
                                 Icon(
                                     imageVector = icon,
                                     description,
-                                    tint = Color.Black
+                                    tint = uiColor
                                 )
                             }
                         }
@@ -216,7 +220,11 @@ fun LoginScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = { showForgotPasswordDialog = true }) {
-                            Text("Forgot Password?", color = MainBlue)
+                            Text(
+                                "Forgot Password?",
+                                color = MainBlue,
+                                style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
                         }
                     }
 
@@ -253,7 +261,7 @@ fun LoginScreen(
                         Text(
                             text = "SIGN IN",
                             color = Color.White,
-                            style = Typography.labelMedium.copy(fontSize = 16.sp)
+                            style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
 
@@ -265,9 +273,16 @@ fun LoginScreen(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "Don't have an account? ")
+                        Text(
+                            text = "Don't have an account?",
+                            style = Typography.labelMedium
+                        )
                         TextButton(onClick = { onNavigateRegisterScreen() }) {
-                            Text("Sign Up", color = MainBlue)
+                            Text(
+                                "Sign Up",
+                                color = MainBlue,
+                                style = Typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                            )
                         }
                     }
                 }
@@ -276,7 +291,7 @@ fun LoginScreen(
     }
     if(showForgotPasswordDialog){
         ForgotPasswordDialog(
-            onDismissRequest = { showForgotPasswordDialog = false },
+            onDismiss = { showForgotPasswordDialog = false },
             onConfirm = { enteredEmail ->
                 emailPasswordAuthenticator.forgotPassword(context,enteredEmail){
                     showForgotPasswordDialog = false
@@ -288,20 +303,21 @@ fun LoginScreen(
 
 @Composable
 fun ForgotPasswordDialog(
-    onDismissRequest: () -> Unit,
+    onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
 
     AlertDialog(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Forgot Password",
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp),
+                "Forgot Password?",
+                style = Typography.titleMedium.copy(fontSize = 24.sp)
             )
         },
         text = {
+            Spacer(modifier = Modifier.height(16.dp))
             TextInputField(
                 value = email,
                 onValueChange = { email = it },
@@ -313,27 +329,20 @@ fun ForgotPasswordDialog(
             )
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    onConfirm(email)
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MainBlue
-                )
-            ) {
+            TextButton(onClick = {
+                onConfirm(email)
+            }) {
                 Text(
-                    text = "Confirm",
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelMedium.copy(fontSize = 16.sp)
+                    "Send",
+                    style = Typography.labelMedium.copy(fontSize = 16.sp)
                 )
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest)
-            {
+            TextButton(onClick = { onDismiss() }) {
                 Text(
-                    text = "Cancel",
-                    style = MaterialTheme.typography.labelMedium.copy(fontSize = 16.sp)
+                    "Cancel",
+                    style = Typography.labelMedium.copy(fontSize = 16.sp)
                 )
             }
         }

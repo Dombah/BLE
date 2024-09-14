@@ -4,12 +4,13 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
+import android.view.Gravity
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,22 +26,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Discount
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Bluetooth
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Discount
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -50,7 +50,6 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
@@ -60,7 +59,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.Typography
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -69,6 +67,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,28 +81,31 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.domagojleskovic.bleadvert.Beacon
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
 import com.domagojleskovic.bleadvert.Event
-import com.domagojleskovic.bleadvert.R
 import com.domagojleskovic.bleadvert.User
 import com.domagojleskovic.bleadvert.UserInfoStorage
+import com.domagojleskovic.bleadvert.ui.theme.BrightRed
+import com.domagojleskovic.bleadvert.ui.theme.DarkSurface
+import com.domagojleskovic.bleadvert.ui.theme.LightTeal
+import com.domagojleskovic.bleadvert.ui.theme.LightYellow
 import com.domagojleskovic.bleadvert.ui.theme.MainBlue
+import com.domagojleskovic.bleadvert.ui.theme.OliveGreen
 import com.domagojleskovic.bleadvert.ui.theme.Typography
 import com.domagojleskovic.bleadvert.viewmodels.AdminViewModel
 import com.domagojleskovic.bleadvert.viewmodels.ModifyBeaconsViewModel
 import com.domagojleskovic.bleadvert.viewmodels.RewardsViewModel
+import com.domagojleskovic.bleadvert.viewmodels.ScannedHistoryViewModel
 import com.domagojleskovic.bleadvert.viewmodels.SharedViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -124,39 +126,22 @@ fun extractNameFromEmail(email: String): String {
     }.toString()
 }
 
-@Composable
-fun HomeScreen(
-    onSignOut: () -> Unit,
-    modifyBeaconsViewModel: ModifyBeaconsViewModel,
-    rewardsViewModel: RewardsViewModel,
-    sharedViewModel: SharedViewModel,
-    adminViewModel: AdminViewModel,
-    toggleScanning: () -> Unit
-) {
-    HomeTopBar(
-        onSignOut = onSignOut,
-        modifyBeaconsViewModel = modifyBeaconsViewModel,
-        rewardsViewModel = rewardsViewModel,
-        sharedViewModel = sharedViewModel,
-        adminViewModel = adminViewModel,
-        toggleScanning = toggleScanning
-    )
-}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar(
+fun HomeScreen(
     onSignOut : () -> Unit,
     modifyBeaconsViewModel: ModifyBeaconsViewModel,
     rewardsViewModel: RewardsViewModel,
     sharedViewModel: SharedViewModel,
     adminViewModel: AdminViewModel,
-    toggleScanning: () -> Unit
+    scannedHistoryViewModel: ScannedHistoryViewModel,
+    toggleScanning: () -> Unit,
+    source: String?
 ) {
+    val isSystemInDarkTheme = isSystemInDarkTheme()
+    val uiColor = if(isSystemInDarkTheme) Color.White else Color.Black
     val currentUser = EmailPasswordAuthenticator.currentUser
     val isAdmin = currentUser?.isAdmin
-    // if(currentUser != null && isAdmin == false){
-    //     rewardsViewModel.fetchRewards(EmailPasswordAuthenticator.currentUser!!)
-    // }
     val context = LocalContext.current
     val userInfoStorage = UserInfoStorage(context)
     val gesturesEnabled by sharedViewModel.gesturesEnabled.collectAsState()
@@ -171,21 +156,23 @@ fun HomeTopBar(
                     toggleScanning = toggleScanning,
                     sharedViewModel = sharedViewModel,
                     currentUser = currentUser,
+                    source = source,
                     modifyBeaconsViewModel = modifyBeaconsViewModel,
+                    rewardsViewModel = rewardsViewModel
                 )
             }
         ),
-        /*if (isAdmin == false)*/ NavigationItem(
+        if (currentUser?.name != "guest") NavigationItem(
             title = "Scanned History",
-            selectedIcon = Icons.Filled.Bluetooth,
-            unselectedIcon = Icons.Outlined.Bluetooth,
-            content = { padding -> ScannedHistory(innerPadding = padding)}
-        )/*else null*/,
+            selectedIcon = Icons.Filled.History,
+            unselectedIcon = Icons.Outlined.History,
+            content = { padding -> ScannedHistory(innerPadding = padding, scannedHistoryViewModel = scannedHistoryViewModel)}
+        )else null,
         if (isAdmin == true) NavigationItem(
             title = "Modify Beacons",
             selectedIcon = Icons.Filled.Bluetooth,
             unselectedIcon = Icons.Outlined.Bluetooth,
-            content = { padding -> ModifyBeacons(innerPadding = padding, viewModel = modifyBeaconsViewModel)}
+            content = { padding -> ModifyBeacons(innerPadding = padding, modifyBeaconsViewModel = modifyBeaconsViewModel)}
         ) else null,
         if(isAdmin == true) NavigationItem(
             title = "Admin Panel",
@@ -193,17 +180,11 @@ fun HomeTopBar(
             unselectedIcon = Icons.Outlined.AdminPanelSettings,
             content = { padding -> AdminPanel(innerPadding = padding, adminViewModel) }
         ) else null,
-        if(currentUser?.name != "guest")NavigationItem(
-            title = "Profile",
-            selectedIcon = Icons.Filled.Person,
-            unselectedIcon = Icons.Outlined.Person,
-            content = { padding -> Profile(innerPadding = padding)}
-        ) else null,
         if(currentUser?.name != "guest") NavigationItem(
             title = "Rewards",
             selectedIcon = Icons.Filled.Discount,
             unselectedIcon = Icons.Outlined.Discount,
-            content = { padding -> Rewards(innerPadding = padding, rewardsViewModel = rewardsViewModel)}
+            content = { padding -> RewardsScreen(innerPadding = padding, rewardsViewModel = rewardsViewModel) }
         ) else null,
         /*
         NavigationItem(
@@ -232,7 +213,14 @@ fun HomeTopBar(
                 items.forEachIndexed { index, item ->
                     NavigationDrawerItem(
                         label = {
-                            Text(text = item.title)
+                            Text(
+                                color = uiColor,
+                                text = item.title,
+                                style = if(index != selectedItemIndex)
+                                    Typography.labelMedium.copy(fontSize = 16.sp)
+                                else
+                                    Typography.labelMedium.copy(fontSize = 16.sp).copy(fontWeight = FontWeight.Bold)
+                            )
                         },
                         selected = index == selectedItemIndex,
                         onClick = {
@@ -266,7 +254,7 @@ fun HomeTopBar(
             topBar = {
                 TopAppBar(
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MainBlue,
+                        containerColor = if(isSystemInDarkTheme) DarkSurface else MainBlue,
                         titleContentColor = Color.White,
                     ),
                     title = {
@@ -311,9 +299,16 @@ fun ScrollContent(
     sharedViewModel: SharedViewModel,
     modifyBeaconsViewModel: ModifyBeaconsViewModel,
     currentUser: User?,
+    source: String?,
     toggleScanning : () -> Unit,
+    rewardsViewModel: RewardsViewModel,
 ) {
 
+    var showRewardAddedToast by remember {
+        mutableStateOf(false)
+    }
+    val isSystemInDarkTheme = isSystemInDarkTheme()
+    val uiColor = if(isSystemInDarkTheme) Color.White else Color.Black
     val isPermissionDialogVisible = remember { mutableStateOf(false) }
     val context = LocalContext.current
     val multiplePermissionLauncher =
@@ -385,40 +380,103 @@ fun ScrollContent(
             }
         }
     }
-
+    val currentActiveEvent = sharedViewModel.activeEvent.collectAsState().value
+    val coroutineScope = rememberCoroutineScope()
     val closestBeacon = sharedViewModel.closestBeacon.collectAsState().value
     val beacons by modifyBeaconsViewModel.beacons.collectAsState()
     val noneVirtualBeacon = Beacon(address = "None", maximumAdvertisementDistance = Double.MAX_VALUE)
 
     val oldClosestBeacon = remember { mutableStateOf<Beacon?>(null) }
-    // processUserEventScan
+    val timeSpentAtBeacon = remember { mutableLongStateOf(0L) }
+    val timerJob = remember { mutableStateOf<Job?>(null) }
     LaunchedEffect(sharedViewModel.scanning.value) {
+        timeSpentAtBeacon.longValue = 0L
+
         while (sharedViewModel.scanning.value) {
             val validBeacons = beacons.filter { modifyBeaconsViewModel.averageDistance(it) <= it.maximumAdvertisementDistance }
             val closest = validBeacons.minByOrNull { modifyBeaconsViewModel.averageDistance(it) }
-            if (closest != oldClosestBeacon.value) {
-                sharedViewModel.setClosestBeacon(closest ?: noneVirtualBeacon)
-                if(closest != null){
-                    sharedViewModel.processUserEventScan(
-                        user = currentUser ?: User(),
-                        event = sharedViewModel.activeEvent.value ?: Event(),
-                        scannedBeacon = closest
 
-                    )
+            if (closest?.address != oldClosestBeacon.value?.address) {
+                // User has moved to a new beacon or is in a zone with no beacons
+                if(closest != null){
+                    oldClosestBeacon.value?.let { previousBeacon ->
+                        // User is leaving the old beacon; save time spent and cancel the timer
+                        timerJob.value?.cancel()
+                        Log.i("Previous", "Old: ${previousBeacon.address}\n New: ${closest.address}")
+                        // Store time spent at the previous beacon if greater than 5 seconds
+                        if (timeSpentAtBeacon.longValue >= 5000) {
+                            sharedViewModel.storeUserVisitTime(
+                                event = currentActiveEvent!!,
+                                beacon = previousBeacon,
+                                user = currentUser ?: User(),
+                                time = timeSpentAtBeacon.longValue // Pass the time spent
+                            )
+                        }
+                        Log.i("BeaconExit", "User exited beacon: ${previousBeacon.address}")
+                        timeSpentAtBeacon.longValue = 0L
+                    }
                 }
+
+                sharedViewModel.setClosestBeacon(closest ?: noneVirtualBeacon) // Update the closest beacon
                 if (closest != null) {
-                    Log.i("ClosestBeacon", closest.address)
+                    // If the new closest beacon is not null and user is not a guest
+                    if (currentUser?.name != "guest") {
+                        // Reset time spent for the new beacon
+                        timeSpentAtBeacon.longValue = 0L
+
+                        // Start accumulating time for the new beacon
+                        timerJob.value = coroutineScope.launch {
+                            while (true) {
+                                delay(1000) // Increment every second
+                                timeSpentAtBeacon.longValue += 1000
+                                Log.i("TimeSpent", "User has spent ${timeSpentAtBeacon.longValue} ms at beacon: ${closest.address}")
+                                // Process the scan after 5 seconds
+                                if (timeSpentAtBeacon.longValue >= 5000) {
+                                    sharedViewModel.processUserEventScan(
+                                        user = currentUser ?: User(),
+                                        event = sharedViewModel.activeEvent.value ?: Event(),
+                                        scannedBeacon = closest,
+                                        rewardsViewModel = rewardsViewModel
+                                    ) {
+                                        Log.i("Reached", "Should Show")
+                                        showRewardAddedToast = true
+                                    }
+                                    sharedViewModel.storeFirstVisit(
+                                        user = currentUser ?: User(),
+                                        event = sharedViewModel.activeEvent.value ?: Event(),
+                                        beacon = closest,
+                                        time = System.currentTimeMillis() - 5000L
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // If no beacon is in range, cancel the timer if it exists
+                    timerJob.value?.cancel()
+                    Log.i("BeaconExit", "User is in a zone with no beacons.")
                 }
-                oldClosestBeacon.value = closest
-                oldClosestBeacon.value?.let { Log.i("ClosestBeacon", it.address) }
+
+                oldClosestBeacon.value = closest // Update the last known closest beacon
             }
-            delay(50)
+
+            delay(50) // Delay between scans
+        }
+
+        // Clean up the timer job if the scanning stops
+        timerJob.value?.cancel()
+    }
+    LaunchedEffect(showRewardAddedToast) {
+        if (showRewardAddedToast) {
+            val toast = Toast.makeText(context, "Reward added!", Toast.LENGTH_SHORT)
+            toast.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 200)
+            toast.show()
+
+            showRewardAddedToast = false
         }
     }
 
     val shouldDisplayWebView = sharedViewModel.scanning.value && closestBeacon?.url?.isNotEmpty() == true
-
-    val currentActiveEvent = sharedViewModel.activeEvent.collectAsState().value
     if (shouldDisplayWebView) {
         val webView = remember {
             WebView(context).apply {
@@ -434,31 +492,71 @@ fun ScrollContent(
         }
 
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    bottom = WindowInsets.systemBars
+                        .asPaddingValues()
+                        .calculateBottomPadding()
+                ),
             factory = { webView }
         )
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .padding(bottom = 16.dp),
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
+                modifier = Modifier
+                    .height(48.dp)
+                    .padding(),
                 onClick = {
+                    oldClosestBeacon.value = null
+                    // lastKnownClosestBeacon.value = null
                     toggleScanning()
                     sharedViewModel.toggleGesturesEnabled()
-                }
+
+                    if(timeSpentAtBeacon.longValue >= 5000){
+                        sharedViewModel.storeUserVisitTime(
+                            currentActiveEvent!!,
+                            closestBeacon!!,
+                            user = currentUser!!,
+                            time = timeSpentAtBeacon.longValue
+                        )
+                    }
+                    if(showRewardAddedToast){
+                        Log.i("Reached", "Should Show")
+                        Toast.makeText(context, "Reward added", Toast.LENGTH_SHORT).show()
+                        showRewardAddedToast = false
+                    }
+                    // Cancel the timer job safely
+                    timerJob.value?.cancel()
+                    timerJob.value = null // Nullify after cancellation to avoid potential issues
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if(isSystemInDarkTheme)
+                        DarkSurface.copy(alpha = 0.9f) else LightYellow.copy(alpha = .90f),
+                    contentColor = uiColor,
+                ),
             ) {
-                Text(text = if (sharedViewModel.scanning.value) "Stop scanning" else "Start scanning")
+                Text(
+                    text = "STOP SCANNING",
+                    color = uiColor,
+                    style = Typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    ),
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     } else {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFDFF5FF).copy(alpha = 0.1f))
+                .background(if (isSystemInDarkTheme) DarkSurface else Color.White)
         ) {
             Column(
                 modifier = Modifier
@@ -469,20 +567,27 @@ fun ScrollContent(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MainBlue.copy(alpha = 0.75f)
+                        containerColor = if(isSystemInDarkTheme)
+                            BrightRed.copy(alpha = 0.25f) else MainBlue.copy(alpha = 0.75f)
                     )
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "Welcome back",
+                            text = if(source == "login") "Welcome back!" else "Welcome!",
                             color = Color.White,
                             style = Typography.labelMedium.copy(fontSize = 24.sp),
 
                             )
                         Text(
-                            text = extractNameFromEmail(currentUser?.name?: "Guest"),
+                            text =
+                                if(currentUser?.name?.contains("@") == true)
+                                    extractNameFromEmail(currentUser.name)
+                                else
+                                    currentUser?.name.let {
+                                        it?.take(1)?.uppercase() + it?.substring(1)
+                                    },
                             color = Color.White,
                             style = Typography.headlineLarge.copy(fontSize = 42.sp),
 
@@ -496,7 +601,8 @@ fun ScrollContent(
                         .fillMaxHeight(fraction = 1f)
                         .clip(RoundedCornerShape(16.dp)),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF56AEC3).copy(alpha = 0.8f)
+                        containerColor = if(isSystemInDarkTheme)
+                            OliveGreen.copy(alpha = 0.8f) else LightTeal.copy(alpha = 0.8f)
                     ),
                 ) {
                     if (currentActiveEvent != null) {
@@ -509,7 +615,8 @@ fun ScrollContent(
                                 loading = {
                                     Box(modifier = Modifier.fillMaxSize()) {
                                         CircularProgressIndicator(
-                                            modifier = Modifier.align(Alignment.Center)
+                                            modifier = Modifier
+                                                .align(Alignment.Center)
                                                 .size(100.dp)
                                         )
                                     }
@@ -578,14 +685,15 @@ fun ScrollContent(
                         multiplePermissionLauncher.launch(requiredPermissionsInitialClient)
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE3E367).copy(alpha = .90f),
-                        contentColor = Color.Black,
+                        containerColor = if(isSystemInDarkTheme)
+                            DarkSurface.copy(alpha = 0.9f) else LightYellow.copy(alpha = .90f),
+                        contentColor = uiColor,
                     ),
                     enabled = currentActiveEvent != null
                     ) {
                     Text(
                         text = if(sharedViewModel.scanning.value) "STOP SCANNING" else "START SCANNING",
-                        color = Color.Black,
+                        color = uiColor,
                         style = Typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
@@ -602,7 +710,7 @@ fun TopAppBar(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier
             .height(160.dp),
-        color = MainBlue,
+        color = if(isSystemInDarkTheme()) BrightRed else MainBlue,
         ) {
         Row(
             modifier = Modifier

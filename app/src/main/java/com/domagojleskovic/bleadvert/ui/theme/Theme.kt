@@ -23,8 +23,8 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Black,
-    surface = Color.White
+    primary = MainBlue,
+    surface = Color.White,
 )
 
 

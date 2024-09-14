@@ -21,6 +21,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
@@ -31,6 +32,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.domagojleskovic.bleadvert.ui.HomeScreen
 import com.domagojleskovic.bleadvert.ui.LoginScreen
 import com.domagojleskovic.bleadvert.ui.RegisterScreen
@@ -38,16 +40,12 @@ import com.domagojleskovic.bleadvert.ui.theme.BLEAdvertTheme
 import com.domagojleskovic.bleadvert.viewmodels.AdminViewModel
 import com.domagojleskovic.bleadvert.viewmodels.ModifyBeaconsViewModel
 import com.domagojleskovic.bleadvert.viewmodels.RewardsViewModel
+import com.domagojleskovic.bleadvert.viewmodels.ScannedHistoryViewModel
 import com.domagojleskovic.bleadvert.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
 import java.math.RoundingMode
 import kotlin.math.log
 import kotlin.math.pow
-
-/*
-val regex = "//(https?://[^\\s]+)"
-    val matchResult = Regex(regex).find(input)
-    */
 
 
 class MainActivity : ComponentActivity() {
@@ -56,7 +54,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var bluetoothLeScanner: BluetoothLeScanner
     private lateinit var bluetoothManager: BluetoothManager
     // private val EDDYSTONE_SERVICE_UUID = ParcelUuid(UUID.fromString("0000FEAA-0000-1000-8000-00805F9B34FB"))
-    private val scanSetting = ScanSettings.SCAN_MODE_BALANCED
+    private val scanSetting = ScanSettings.SCAN_MODE_LOW_LATENCY
 
     private val sharedViewModel: SharedViewModel by viewModels()
     private fun createWithFactory(
@@ -94,6 +92,14 @@ class MainActivity : ComponentActivity() {
                 AdminViewModel(databaseAccessObject)
             }
         )[AdminViewModel::class.java]
+    }
+    private val scannedHistoryViewModel: ScannedHistoryViewModel by lazy {
+        ViewModelProvider(
+            this,
+            createWithFactory {
+                ScannedHistoryViewModel(databaseAccessObject)
+            }
+        )[ScannedHistoryViewModel::class.java]
     }
 
     var beacons = mutableListOf<Beacon>()
@@ -147,9 +153,13 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 onNavigateRegisterScreen = {
                                     navController.navigate("register")
+                                    rewardsViewModel.fetchRewards(EmailPasswordAuthenticator.currentUser)
+                                    scannedHistoryViewModel.fetchUserScannedHistory(EmailPasswordAuthenticator.currentUser)
                                 },
                                 onLoginSuccess = {
-                                    navController.navigate("home_screen")
+                                    navController.navigate("home_screen?source=login")
+                                    rewardsViewModel.fetchRewards(EmailPasswordAuthenticator.currentUser)
+                                    scannedHistoryViewModel.fetchUserScannedHistory(EmailPasswordAuthenticator.currentUser)
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator,
                             )
@@ -165,16 +175,21 @@ class MainActivity : ComponentActivity() {
                         ){
                             RegisterScreen(
                                 onRegisterSuccess = {
-                                    navController.navigate("home_screen")
+                                    navController.navigate("home_screen?source=register")
+                                    rewardsViewModel.fetchRewards(EmailPasswordAuthenticator.currentUser)
                                 },
                                 onNavigateLoginScreen = {
                                     navController.popBackStack()
+                                },
+                                onSignInAsGuest = {
+                                    navController.navigate("home_screen?source=guest")
                                 },
                                 emailPasswordAuthenticator = emailPasswordAuthenticator
                             )
                         }
                         composable(
-                            "home_screen",
+                            "home_screen?source={source}",
+                            arguments = listOf(navArgument("source") { defaultValue = "unknown" }),
                             enterTransition = {
                                 fadeIn(
                                     animationSpec = tween(
@@ -183,17 +198,21 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
 
-                        ){
+                        ){ backStackEntry ->
+                            val source = backStackEntry.arguments?.getString("source")
                             HomeScreen(
                                 modifyBeaconsViewModel = modifyBeaconViewModel,
                                 rewardsViewModel = rewardsViewModel,
                                 onSignOut = {
                                     navController.navigate("login")
                                     emailPasswordAuthenticator.signOut()
+                                    scannedHistoryViewModel.reset()
                                 },
                                 sharedViewModel = sharedViewModel,
                                 adminViewModel = adminViewModel,
-                                toggleScanning = { toggleScanning() }
+                                scannedHistoryViewModel = scannedHistoryViewModel,
+                                toggleScanning = { toggleScanning() },
+                                source = source
                             )
                         }
                     }
@@ -220,7 +239,6 @@ class MainActivity : ComponentActivity() {
                     modifyBeaconViewModel.updateDistances(beacon, distance)
                     // Log.i("Beacon", "$beacon")
                     val avgDistance = modifyBeaconViewModel.averageDistance(beacon)
-
                     // Log.d("Beacons","Beacon ${beacon?.address} - Average Distance: $avgDistance meters")
                 }
             }

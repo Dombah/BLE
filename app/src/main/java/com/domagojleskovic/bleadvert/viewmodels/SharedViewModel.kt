@@ -1,5 +1,6 @@
 package com.domagojleskovic.bleadvert.viewmodels
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -21,9 +22,6 @@ class SharedViewModel : ViewModel() {
     private val _gesturesEnabled = MutableStateFlow(true)
     val gesturesEnabled: StateFlow<Boolean> = _gesturesEnabled
 
-    private val _currentUser = MutableStateFlow<User?>(null)
-    val currentUser: StateFlow<User?> = _currentUser
-
     private val _activeEvent = MutableStateFlow<Event?>(null)
     val activeEvent: StateFlow<Event?> = _activeEvent
 
@@ -34,11 +32,7 @@ class SharedViewModel : ViewModel() {
             _closestBeacon.emit(beacon)
         }
     }
-    fun setCurrentUser(user : User?){
-        viewModelScope.launch {
-            _currentUser.emit(user)
-        }
-    }
+
     fun toggleGesturesEnabled() {
         viewModelScope.launch {
             _gesturesEnabled.emit(!_gesturesEnabled.value)
@@ -50,12 +44,40 @@ class SharedViewModel : ViewModel() {
             Log.i("Current event", "${activeEvent.value}")
         }
     }
-    fun processUserEventScan(user: User, event: Event, scannedBeacon: Beacon){
+    fun processUserEventScan(
+        user: User,
+        event: Event,
+        scannedBeacon: Beacon,
+        rewardsViewModel : RewardsViewModel,
+        onRewardAdded : () -> Unit
+    ){
         viewModelScope.launch {
             dao.processUserEventScan(
                 user,
                 event,
-                scannedBeacon
+                scannedBeacon,
+                rewardsViewModel,
+                onRewardAdded
+            )
+        }
+    }
+    fun storeFirstVisit(event: Event, beacon: Beacon, user: User, time : Long){
+        viewModelScope.launch {
+            dao.storeFirstVisit(
+                event,
+                beacon,
+                user,
+                time
+            )
+        }
+    }
+    fun storeUserVisitTime(event: Event, beacon: Beacon, user: User, time : Long){
+        viewModelScope.launch {
+            dao.storeUserVisitTime(
+                event,
+                beacon,
+                user,
+                time
             )
         }
     }

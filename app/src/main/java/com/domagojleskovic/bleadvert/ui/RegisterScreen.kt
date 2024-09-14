@@ -4,6 +4,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,6 +55,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -64,6 +67,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import com.domagojleskovic.bleadvert.EmailPasswordAuthenticator
 import com.domagojleskovic.bleadvert.UserInfoStorage
+import com.domagojleskovic.bleadvert.ui.theme.DarkBlueGreen
+import com.domagojleskovic.bleadvert.ui.theme.DarkSurface
+import com.domagojleskovic.bleadvert.ui.theme.LightBlue
+import com.domagojleskovic.bleadvert.ui.theme.MainBlue
+import com.domagojleskovic.bleadvert.ui.theme.RedGray
 import com.domagojleskovic.bleadvert.ui.theme.Typography
 import com.domagojleskovic.bleadvert.viewmodels.LoginRegisterViewModel
 import kotlinx.coroutines.launch
@@ -89,7 +97,7 @@ fun TextInputField(
         trailingIcon = trailingIcon,
         shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
         keyboardOptions = keyboardOptions,
-        visualTransformation = visualTransformation
+        visualTransformation = visualTransformation,
     )
 }
 
@@ -98,13 +106,13 @@ fun TextInputField(
 fun RegisterScreen(
     onRegisterSuccess : () -> Unit,
     onNavigateLoginScreen: () -> Unit,
+    onSignInAsGuest : () -> Unit,
     emailPasswordAuthenticator: EmailPasswordAuthenticator,
     loginRegisterViewModel: LoginRegisterViewModel = LoginRegisterViewModel()
 ) {
-    val darkGray = Color(0xFF344C64) // Dark Gray Background
-    val lightBlue = Color(0xFF378CE7) // Light Blue for Buttons and Highlights
-    val darkSurface = Color.White // Darker Surface for the Bottom Section
-    val textColor = Color.Black
+    val isSystemInDarkTheme = isSystemInDarkTheme()
+    val uiColor = if(isSystemInDarkTheme) Color.White else Color.Black
+
 
     val context = LocalContext.current
     val userInfoStorage = UserInfoStorage(context)
@@ -114,6 +122,7 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("")}
     var confirmPassword by remember { mutableStateOf("")}
     var isLoading by remember { mutableStateOf(false)}
+    var passwordVisible by remember { mutableStateOf(false)}
 
     if(isLoading) {
         Column(
@@ -134,12 +143,11 @@ fun RegisterScreen(
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
-            // Top half - Dark Gray background with text
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.35f)
-                    .background(darkGray)
+                    .background(if(isSystemInDarkTheme) RedGray else DarkBlueGreen)
                     .padding(16.dp)
             ) {
                 Column(
@@ -155,7 +163,7 @@ fun RegisterScreen(
             }
             Surface(
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                color = darkSurface,
+                color = if(isSystemInDarkTheme) DarkSurface else Color.White,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -170,7 +178,7 @@ fun RegisterScreen(
                 ) {
                     Text(
                         text = "Register",
-                        color = textColor,
+                        color = uiColor,
                         style = Typography.headlineMedium.copy(fontSize = 32.sp),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
@@ -182,7 +190,7 @@ fun RegisterScreen(
                         onValueChange = { email = it },
                         leadingIcon = {
                             Icon(imageVector = Icons.Default.Email, contentDescription = null)
-                        }
+                        },
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     TextInputField(
@@ -193,6 +201,23 @@ fun RegisterScreen(
                         leadingIcon = {
                             Icon(imageVector = Icons.Default.Lock, contentDescription = null)
                         },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        trailingIcon = {
+                            val icon = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else
+                                Icons.Filled.VisibilityOff
+                            val description =
+                                if (passwordVisible) "Hide password" else "Show password"
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = icon,
+                                    description,
+                                    tint = uiColor
+                                )
+                            }
+                        }
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     TextInputField(
@@ -203,6 +228,8 @@ fun RegisterScreen(
                         leadingIcon = {
                             Icon(imageVector = Icons.Default.Lock, contentDescription = null)
                         },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     )
                     Spacer(modifier = Modifier.height(48.dp))
 
@@ -236,9 +263,13 @@ fun RegisterScreen(
                             .height(48.dp)
                             .padding(horizontal = 16.dp),
                         shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(lightBlue)
+                        colors = ButtonDefaults.buttonColors(if(isSystemInDarkTheme) MainBlue else LightBlue)
                     ) {
-                        Text(text = "SIGN UP", color = Color.White)
+                        Text(
+                            text = "SIGN UP",
+                            color = Color.White,
+                            style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
                     }
                     TextButton(
                         onClick = {
@@ -246,7 +277,7 @@ fun RegisterScreen(
                             emailPasswordAuthenticator.signInAsGuest(
                                 onSuccess = {
                                     isLoading = false
-                                    onRegisterSuccess()
+                                    onSignInAsGuest()
                                 },
                                 onFailure = {
                                     isLoading = false
@@ -258,8 +289,8 @@ fun RegisterScreen(
                     ) {
                         Text(
                             text = "Continue as Guest",
-                            color = lightBlue,
-                            fontWeight = FontWeight.SemiBold
+                            color = if (isSystemInDarkTheme) MainBlue else LightBlue,
+                            style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                     Column(
@@ -274,9 +305,17 @@ fun RegisterScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Already have an account? ", color = textColor)
+                            Text(
+                                text = "Already have an account? ",
+                                color = uiColor,
+                                style = Typography.labelMedium
+                            )
                             TextButton(onClick = { onNavigateLoginScreen() }) {
-                                Text("Sign In", color = lightBlue)
+                                Text(
+                                    "Sign In",
+                                    color = if (isSystemInDarkTheme) MainBlue else LightBlue,
+                                    style = Typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                )
                             }
                         }
                     }
